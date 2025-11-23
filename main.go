@@ -1,47 +1,49 @@
 package main
 
 import (
-	"log"
-	"os"
+    "log"
+    "os"
 
-	"BE_PROJECTUAS/database" // GANTI kalau module kamu namanya beda
+    "BE_PROJECTUAS/database"
+    "BE_PROJECTUAS/routes"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
+    "github.com/gofiber/fiber/v2"
+    "github.com/joho/godotenv"
 )
 
 func main() {
-	// Load .env (kalau ada)
-	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  .env tidak ditemukan, pakai environment OS")
-	}
+    // Load .env
+    if err := godotenv.Load(); err != nil {
+        log.Println("⚠️  .env tidak ditemukan, pakai environment OS")
+    }
 
-	// Connect ke PostgreSQL
-	database.ConnectPostgres()
+    // Connect databases
+    database.ConnectPostgres()
+    database.ConnectMongo()
 
-	// Connect ke MongoDB
-	database.ConnectMongo()
+    // Setup fiber app
+    app := fiber.New()
 
-	// Setup Fiber
-	app := fiber.New()
+    // ===== ROUTES ===== (Clean, init repo/service di dalam)
+    routes.SetupRoutes(app)
 
-	// Route test /health
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":   "ok",
-			"postgres": "connected",
-			"mongo":    "connected",
-		})
-	})
+    // ===== HEALTH CHECK =====
+    app.Get("/health", func(c *fiber.Ctx) error {
+        return c.JSON(fiber.Map{
+            "status":   "ok",
+            "postgres": "connected",
+            "mongo":    "connected",
+        })
+    })
 
-	// Baca port dari env
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "3000"
-	}
+    // Read port from env
+    port := os.Getenv("APP_PORT")
+    if port == "" {
+        port = "3000"
+    }
 
-	log.Println("🚀 Server running on port", port)
-	if err := app.Listen(":" + port); err != nil {
-		log.Fatal(err)
-	}
+    log.Println("🚀 Server running on port", port)
+    if err := app.Listen(":" + port); err != nil {
+        log.Fatal(err)
+    }
 }
