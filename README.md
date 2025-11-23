@@ -179,3 +179,42 @@ Format dokumen sesuai modul:
   "createdAt": ISODate(),
   "updatedAt": ISODate()
 }
+
+▶️ Cara Menjalankan Project
+1️⃣ Clone repository
+git clone https://github.com/cococimoryy1/projectuas_be.git
+cd projectuas_be
+
+2️⃣ Install dependencies
+go mod tidy
+
+3️⃣ Setup .env
+APP_PORT=8080
+POSTGRES_DSN=postgres://postgres:YOURPASSWORD@localhost:5432/prestasi_mahasiswa?sslmode=disable
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=prestasi_mahasiswa
+
+JWT_SECRET=supersecret
+
+4️⃣ Jalankan server
+go run main.go
+
+Jika sukses:
+PostgreSQL connected
+MongoDB connected
+Server running on port 8080
+📡 Endpoint Utama (Ringkas)
+
+Auth
+POST /login
+GET /profile
+Achievements
+POST /achievements
+PUT /achievements/:id
+DELETE /achievements/:id
+POST /achievements/:id/submit
+POST /achievements/:id/verify
+POST /achievements/:id/reject
+Students / Lecturers
+GET /lecturers/:id/advisees
+GET /students/:id/achievements
