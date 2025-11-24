@@ -1,10 +1,11 @@
 package repository
 
 import (
-    "BE_PROJECTUAS/database"
     "BE_PROJECTUAS/apps/models"
+    "BE_PROJECTUAS/database"
     "context"
 )
+
 
 type userRepo struct{}
 
@@ -12,66 +13,49 @@ func NewUserRepository() UserRepository {
     return &userRepo{}
 }
 
-func (r *userRepo) FindByUsernameOrEmail(ctx context.Context, identifier string) (*models.User, error) {
+// ======================
+// GET ALL USERS
+// ======================
+func (r *userRepo) ListUsers(ctx context.Context) ([]models.User, error) {
     query := `
         SELECT u.id, u.username, u.email, u.password_hash,
                u.role_id, r.name AS role_name, u.is_active
         FROM users u
         JOIN roles r ON u.role_id = r.id
-        WHERE u.username = $1 OR LOWER(u.email) = LOWER($1)
-        AND u.is_active = true
-        LIMIT 1;
+        ORDER BY u.created_at DESC;
     `
 
-    var u models.User
-    err := database.PostgresDB.QueryRowContext(ctx, query, identifier).Scan(
-        &u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.RoleID, &u.RoleName, &u.IsActive,
-    )
-
-    if err != nil {
-        return nil, err
-    }
-
-    return &u, nil
-}
-
-func (r *userRepo) GetPermissionsByRoleID(ctx context.Context, roleID string) ([]string, error) {
-    query := `
-        SELECT p.name
-        FROM permissions p
-        JOIN role_permissions rp ON p.id = rp.permission_id
-        WHERE rp.role_id = $1;
-    `
-
-    rows, err := database.PostgresDB.QueryContext(ctx, query, roleID)
+    rows, err := database.PostgresDB.QueryContext(ctx, query)
     if err != nil {
         return nil, err
     }
     defer rows.Close()
 
-    var list []string
+    var users []models.User
     for rows.Next() {
-        var name string
-        if err := rows.Scan(&name); err != nil { // Fix: assign err
+        var u models.User
+        if err := rows.Scan(
+            &u.ID, &u.Username, &u.Email, &u.PasswordHash,
+            &u.RoleID, &u.RoleName, &u.IsActive,
+        ); err != nil {
             return nil, err
         }
-        list = append(list, name)
+        users = append(users, u)
     }
 
-    if err := rows.Err(); err != nil { // Tambah: Handle iteration error
-        return nil, err
-    }
-
-    return list, nil
+    return users, nil
 }
-func (r *userRepo) FindByID(ctx context.Context, id string) (*models.User, error) {
+
+// ======================
+// GET BY ID
+// ======================
+func (r *userRepo) GetUserByID(ctx context.Context, id string) (*models.User, error) {
     query := `
         SELECT u.id, u.username, u.email, u.password_hash,
                u.role_id, r.name AS role_name, u.is_active
         FROM users u
         JOIN roles r ON u.role_id = r.id
         WHERE u.id = $1
-        LIMIT 1;
     `
 
     var u models.User
@@ -79,9 +63,68 @@ func (r *userRepo) FindByID(ctx context.Context, id string) (*models.User, error
         &u.ID, &u.Username, &u.Email, &u.PasswordHash,
         &u.RoleID, &u.RoleName, &u.IsActive,
     )
+
     if err != nil {
         return nil, err
     }
 
     return &u, nil
+}
+
+// ======================
+// CREATE USER
+// ======================
+func (r *userRepo) CreateUser(ctx context.Context, req models.CreateUserRequest) (string, error) {
+    query := `
+        INSERT INTO users (username, email, password_hash, role_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id;
+    `
+
+    var id string
+    err := database.PostgresDB.QueryRowContext(ctx, query,
+        req.Username,
+        req.Email,
+        req.Password,
+        req.RoleID,
+    ).Scan(&id)
+
+    if err != nil {
+        return "", err
+    }
+
+    return id, nil
+}
+
+// ======================
+// UPDATE
+// ======================
+func (r *userRepo) UpdateUser(ctx context.Context, id string, req models.UpdateUserRequest) error {
+    query := `
+        UPDATE users SET username=$1, email=$2, role_id=$3 WHERE id=$4;
+    `
+
+    _, err := database.PostgresDB.ExecContext(ctx, query,
+        req.Username, req.Email, req.RoleID, id,
+    )
+
+    return err
+}
+
+// ======================
+// DELETE
+// ======================
+func (r *userRepo) DeleteUser(ctx context.Context, id string) error {
+    query := `DELETE FROM users WHERE id=$1;`
+    _, err := database.PostgresDB.ExecContext(ctx, query, id)
+    return err
+}
+
+// ======================
+// UPDATE ROLE ONLY (PUT /users/:id/role)
+// ======================
+func (r *userRepo) UpdateUserRole(ctx context.Context, id string, roleID string) error {
+    query := `UPDATE users SET role_id=$1 WHERE id=$2;`
+    _, err := database.PostgresDB.ExecContext(ctx, query, roleID, id)
+    return err
 }

@@ -5,7 +5,8 @@ import (
     "BE_PROJECTUAS/apps/models"
     "context"
 
-    "github.com/google/uuid"
+    // "github.com/google/uuid"
+    "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type achievementRepo struct{}
@@ -15,22 +16,38 @@ func NewAchievementRepository() AchievementRepository {
 }
 
 func (r *achievementRepo) CreateAchievementReference(ctx context.Context, a models.Achievement) (string, error) {
-    // Auto-generate ID jika kosong (SRS hal.4 UUID)
-    if a.ID == "" {
-        a.ID = uuid.New().String()
-    }
-
     query := `
         INSERT INTO achievement_references 
-        (id, student_id, mongo_achievement_id, status)
-        VALUES ($1, $2, $3, $4)
+        (id, student_id, mongo_achievement_id, status, created_at, updated_at)
+        VALUES ($1,$2,$3,'draft',NOW(),NOW())
         RETURNING id;
     `
-
     var id string
-    err := database.PostgresDB.QueryRowContext(ctx, query, a.ID, a.StudentID, a.MongoID, a.Status).Scan(&id)
-    return id, err
+    err := database.PostgresDB.QueryRowContext(ctx, query,
+        a.ID,
+        a.StudentID,
+        a.MongoAchievementID,
+    ).Scan(&id)
+
+    if err != nil {
+        return "", err
+    }
+
+    return id, nil
 }
+
+func (r *achievementRepo) InsertMongoAchievement(ctx context.Context, doc models.AchievementMongo) (string, error) {
+    col := database.MongoDB.Collection("achievements")
+
+    result, err := col.InsertOne(ctx, doc)
+    if err != nil {
+        return "", err
+    }
+
+    oid := result.InsertedID.(primitive.ObjectID)
+    return oid.Hex(), nil
+}
+
 
 func (r *achievementRepo) UpdateStatus(ctx context.Context, id string, status string) error {
     query := `UPDATE achievement_references SET status = $1 WHERE id = $2;`
@@ -54,7 +71,7 @@ func (r *achievementRepo) ListByStudent(ctx context.Context, studentID string) (
     var list []models.Achievement
     for rows.Next() {
         var a models.Achievement
-        if err := rows.Scan(&a.ID, &a.StudentID, &a.MongoID, &a.Status); err != nil { // Fix: assign err
+        if err := rows.Scan(&a.ID, &a.StudentID, &a.MongoAchievementID, &a.Status); err != nil { // Fix: assign err
             return nil, err
         }
         list = append(list, a)
@@ -84,7 +101,7 @@ func (r *achievementRepo) ListByAdvisorStudents(ctx context.Context, advisorID s
     var list []models.Achievement
     for rows.Next() {
         var a models.Achievement
-        if err := rows.Scan(&a.ID, &a.StudentID, &a.MongoID, &a.Status); err != nil {
+        if err := rows.Scan(&a.ID, &a.StudentID, &a.MongoAchievementID, &a.Status); err != nil {
             return nil, err
         }
         list = append(list, a)

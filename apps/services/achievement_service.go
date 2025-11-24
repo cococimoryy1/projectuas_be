@@ -5,7 +5,7 @@ import (
     "BE_PROJECTUAS/apps/repository"
     "context"
     "errors"
-    // "time"
+    "time"
 
     "github.com/google/uuid"
 )
@@ -18,29 +18,53 @@ func NewAchievementService(repo repository.AchievementRepository) *AchievementSe
     return &AchievementService{Repo: repo}
 }
 
-func (s *AchievementService) Create(ctx context.Context, req models.CreateAchievementRequest, studentID string) (*models.AchievementResponse, error) {
-    if req.Title == "" {
-        return nil, errors.New("title required")
+func (s *AchievementService) Create(ctx context.Context, req models.CreateAchievementParsed, studentID string) (*models.AchievementResponse, error) {
+
+    // Build mongo document
+    achMongo := models.AchievementMongo{
+        StudentID:       studentID,
+        Title:           req.Title,
+        Description:     req.Description,
+        AchievementType: req.AchievementType,
+        Details:         req.Details,
+        Tags:            req.Tags,
+        Attachments: []models.AttachmentMongo{
+            {
+                FileName:   req.FilePath,
+                FileUrl:    "/uploads/achievements/" + req.FilePath,
+                FileType:   req.FileType,
+                UploadedAt: time.Now(),
+            },
+        },
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
     }
 
-    // Placeholder Mongo insert (SRS hal.6-7)
-    // mongoID, err := mongoRepo.Insert(ctx, req) // Implement: {studentId: studentID, title: req.Title, details: req.Details}
-    mongoID := uuid.New().String() // Placeholder
+    mongoID, err := s.Repo.InsertMongoAchievement(ctx, achMongo)
+    if err != nil {
+        return nil, err
+    }
 
-    ach := models.Achievement{
-        ID:        uuid.New().String(),
-        StudentID: studentID,
+    // Create reference SQL
+    ref := models.Achievement{
+        ID:                 uuid.New().String(),
+        StudentID:          studentID,
+        MongoAchievementID: mongoID,
+        Status:             "draft",
+    }
+
+    refID, err := s.Repo.CreateAchievementReference(ctx, ref)
+    if err != nil {
+        return nil, err
+    }
+
+    return &models.AchievementResponse{
+        ID:        refID,
         MongoID:   mongoID,
         Status:    "draft",
-    }
-
-    refID, err := s.Repo.CreateAchievementReference(ctx, ach)
-    if err != nil {
-        return nil, errors.New("failed to create achievement")
-    }
-
-    return &models.AchievementResponse{ID: refID, Status: "draft"}, nil
+    }, nil
 }
+
 
 func (s *AchievementService) Submit(ctx context.Context, id string) error {
     // Check status draft if needed
@@ -78,6 +102,6 @@ func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
     return errors.New("not implemented") // SRS hal.11
 }
 
-func (s *AchievementService) UploadAttachment(ctx context.Context, id string) error {
-    return errors.New("not implemented") // FR-003 attachments
-}
+// func (s *AchievementService) UploadAttachment(ctx context.Context, id string) error {
+//     return errors.New("not implemented") // FR-003 attachments
+// }

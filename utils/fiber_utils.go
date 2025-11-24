@@ -2,7 +2,13 @@ package utils
 
 import (
     "context"
+    "encoding/json"
+    "path/filepath"
+    "strings"
+    "github.com/google/uuid"
+
     "BE_PROJECTUAS/apps/models"
+    
 
     "github.com/gofiber/fiber/v2"
 )
@@ -173,5 +179,155 @@ func WrapLogout(
             return ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
         }
         return SuccessResponse(c, fiber.Map{"message": "Logged out successfully"})
+    }
+}
+func WrapNoBody[Resp any](
+    svcFunc func(context.Context) (*Resp, error),
+) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        resp, err := svcFunc(c.Context())
+        if err != nil {
+            return ErrorResponse(c, fiber.StatusBadRequest, err.Error())
+        }
+        return SuccessResponse(c, resp)
+    }
+}
+func WrapParamReturn[Resp any](
+    svcFunc func(context.Context, string) (*Resp, error),
+) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        id := c.Params("id")
+        resp, err := svcFunc(c.Context(), id)
+        if err != nil {
+            return ErrorResponse(c, fiber.StatusNotFound, err.Error())
+        }
+        return SuccessResponse(c, resp)
+    }
+}
+func WrapUpdateResp[Req any, Resp any](
+    svcFunc func(context.Context, string, Req) (*Resp, error),
+) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        id := c.Params("id")
+
+        req, err := ParseBody[Req](c)
+        if err != nil {
+            return err
+        }
+
+        resp, svcErr := svcFunc(c.Context(), id, req)
+        if svcErr != nil {
+            return ErrorResponse(c, 400, svcErr.Error())
+        }
+
+        return SuccessResponse(c, resp)
+    }
+}
+
+
+func WrapLogicParam[Req any, Resp any](
+    svcFunc func(context.Context, string, Req) (*Resp, error),
+) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        id := c.Params("id")
+
+        req, err := ParseBody[Req](c)
+        if err != nil {
+            return err
+        }
+
+        resp, svcErr := svcFunc(c.Context(), id, req)
+        if svcErr != nil {
+            return ErrorResponse(c, 400, svcErr.Error())
+        }
+
+        return SuccessResponse(c, resp)
+    }
+}
+
+
+func WrapParamResp[Resp any](
+    svcFunc func(context.Context, string) (*Resp, error),
+) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        id := c.Params("id")
+
+        resp, err := svcFunc(c.Context(), id)
+        if err != nil {
+            return ErrorResponse(c, 400, err.Error())
+        }
+
+        return SuccessResponse(c, resp)
+    }
+}
+func WrapCreateAchievement(
+    svcFunc func(context.Context, models.CreateAchievementParsed, string) (*models.AchievementResponse, error),
+) fiber.Handler {
+
+    return func(c *fiber.Ctx) error {
+
+        userID := c.Locals("userID").(string)
+
+        // Parse fields
+        parsed := models.CreateAchievementParsed{
+            Title:           c.FormValue("title"),
+            Description:     c.FormValue("description"),
+            AchievementType: c.FormValue("achievementType"),
+        }
+
+        // Parse dynamic fields (details json)
+        detailsJson := c.FormValue("details")
+        if detailsJson != "" {
+            var details map[string]interface{}
+            if err := json.Unmarshal([]byte(detailsJson), &details); err == nil {
+                parsed.Details = details
+            }
+        }
+
+        // Tags comma separated
+        tags := c.FormValue("tags")
+        if tags != "" {
+            parsed.Tags = strings.Split(tags, ",")
+        }
+
+        // File
+        file, err := c.FormFile("file")
+        if err != nil {
+            return ErrorResponse(c, 400, "file is required")
+        }
+
+        if file.Size > 2*1024*1024 {
+            return ErrorResponse(c, 400, "file exceeds 2MB")
+        }
+
+        mime := file.Header.Get("Content-Type")
+        allowed := map[string]bool{
+            "application/pdf": true,
+            "image/jpeg": true,
+            "image/png": true,
+        }
+        if !allowed[mime] {
+            return ErrorResponse(c, 400, "only PDF/JPG/PNG allowed")
+        }
+
+        // Save file
+        ext := filepath.Ext(file.Filename)
+        filename := uuid.New().String() + ext
+        path := "./uploads/achievements/" + filename
+
+        if err := c.SaveFile(file, path); err != nil {
+            return ErrorResponse(c, 500, "failed saving file")
+        }
+
+        parsed.FilePath = filename
+        parsed.FileType = mime
+
+        // call service
+        resp, svcErr := svcFunc(c.Context(), parsed, userID)
+        if svcErr != nil {
+            return ErrorResponse(c, 400, svcErr.Error())
+        }
+
+        return SuccessResponse(c, resp)
     }
 }
