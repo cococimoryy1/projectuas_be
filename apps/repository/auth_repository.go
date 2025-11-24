@@ -33,6 +33,17 @@ func (r *authRepo) FindByUsernameOrEmail(ctx context.Context, identifier string)
 
     return &u, nil
 }
+func (r *authRepo) GetStudentByUserID(ctx context.Context, userID string) (string, error) {
+    query := `SELECT id FROM students WHERE user_id = $1 LIMIT 1`
+
+    var studentID string
+    err := database.PostgresDB.QueryRowContext(ctx, query, userID).Scan(&studentID)
+    if err != nil {
+        return "", err
+    }
+    return studentID, nil
+}
+
 
 func (r *authRepo) FindByID(ctx context.Context, id string) (*models.User, error) {
     query := `

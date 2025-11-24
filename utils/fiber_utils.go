@@ -266,7 +266,8 @@ func WrapCreateAchievement(
 
     return func(c *fiber.Ctx) error {
 
-        userID := c.Locals("userID").(string)
+        studentID := c.Locals("studentID").(string)
+
 
         // Parse fields
         parsed := models.CreateAchievementParsed{
@@ -323,7 +324,7 @@ func WrapCreateAchievement(
         parsed.FileType = mime
 
         // call service
-        resp, svcErr := svcFunc(c.Context(), parsed, userID)
+       resp, svcErr := svcFunc(c.Context(), parsed, studentID)
         if svcErr != nil {
             return ErrorResponse(c, 400, svcErr.Error())
         }

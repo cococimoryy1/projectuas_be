@@ -22,11 +22,10 @@ func AuthRequired() fiber.Handler {
         if err != nil {
             return c.Status(401).JSON(fiber.Map{"error": "invalid or expired token"})
         }
-
-        // simpan claims ke Locals
        // simpan claims ke Locals
 		c.Locals("claims", claims)
 		c.Locals("userID", claims.UserID)
+        c.Locals("studentID", claims.StudentID)
 		c.Locals("role", claims.RoleName)
 
 

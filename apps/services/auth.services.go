@@ -33,23 +33,29 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
         return nil, errors.New("invalid credentials")
     }
 
+    // password
     if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
         return nil, errors.New("invalid credentials")
     }
 
+    // permissions
     perms, err := s.AuthRepo.GetPermissionsByRoleID(ctx, user.RoleID)
     if err != nil {
         return nil, errors.New("permission load error")
     }
+
+    // ⬅️ Tambahkan StudentID
+    studentID, _ := s.AuthRepo.GetStudentByUserID(ctx, user.ID)
 
     secret := os.Getenv("JWT_SECRET")
     if secret == "" {
         return nil, errors.New("jwt secret missing")
     }
 
-    // === Access Token ===
+    // JWT Payload
     claims := models.JwtCustomClaims{
         UserID:      user.ID,
+        StudentID:   studentID, // ⬅️ Tambahan
         Username:    user.Username,
         RoleName:    user.RoleName,
         Permissions: perms,
@@ -65,12 +71,12 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
         return nil, errors.New("token generation failed")
     }
 
-    // === Refresh Token ===
-    refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+    // refresh token
+    refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
         "sub": user.ID,
         "exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
     })
-    refreshStr, _ := refreshToken.SignedString([]byte(secret))
+    refreshStr, _ := refresh.SignedString([]byte(secret))
 
     return &models.LoginResponse{
         Token:        signedToken,

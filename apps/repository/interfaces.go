@@ -9,6 +9,7 @@ type AuthRepository interface {
     FindByUsernameOrEmail(ctx context.Context, identifier string) (*models.User, error)
     FindByID(ctx context.Context, id string) (*models.User, error)
     GetPermissionsByRoleID(ctx context.Context, roleID string) ([]string, error)
+    GetStudentByUserID(ctx context.Context, userID string) (string, error)
 }
 
 type UserRepository interface {
