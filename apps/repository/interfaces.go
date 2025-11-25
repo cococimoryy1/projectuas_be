@@ -29,4 +29,7 @@ type AchievementRepository interface {
     ListByAdvisorStudents(ctx context.Context, advisorID string) ([]models.Achievement, error) // Tambah FR-006
     // Tambah jika perlu: ListAll for admin FR-010
     InsertMongoAchievement(ctx context.Context, doc models.AchievementMongo) (string, error)
+    GetByID(ctx context.Context, id string) (*models.Achievement, error)
+    VerifyAchievement(ctx context.Context, id string, lecturerID string) error
+    IsAdvisorOf(ctx context.Context, lecturerID string, studentID string) (bool, error)
 }

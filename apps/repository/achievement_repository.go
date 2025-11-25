@@ -48,6 +48,37 @@ func (r *achievementRepo) InsertMongoAchievement(ctx context.Context, doc models
     return oid.Hex(), nil
 }
 
+func (r *achievementRepo) GetByID(ctx context.Context, id string) (*models.Achievement, error) {
+    query := `
+        SELECT id, student_id, mongo_achievement_id, status,
+               submitted_at, verified_at, verified_by, rejection_note
+        FROM achievement_references
+        WHERE id = $1;
+    `
+    row := database.PostgresDB.QueryRowContext(ctx, query, id)
+
+    var a models.Achievement
+    err := row.Scan(
+        &a.ID, &a.StudentID, &a.MongoAchievementID, &a.Status,
+        &a.SubmittedAt, &a.VerifiedAt, &a.VerifiedBy, &a.RejectionNote,
+    )
+    if err != nil {
+        return nil, err
+    }
+    return &a, nil
+}
+func (r *achievementRepo) VerifyAchievement(ctx context.Context, id, lecturerID string) error {
+    query := `
+        UPDATE achievement_references
+        SET status = 'verified',
+            verified_at = NOW(),
+            verified_by = $2
+        WHERE id = $1;
+    `
+    _, err := database.PostgresDB.ExecContext(ctx, query, id, lecturerID)
+    return err
+}
+
 
 func (r *achievementRepo) UpdateStatus(ctx context.Context, id string, status string) error {
     query := `UPDATE achievement_references SET status = $1 WHERE id = $2;`
@@ -112,4 +143,17 @@ func (r *achievementRepo) ListByAdvisorStudents(ctx context.Context, advisorID s
     }
 
     return list, nil
+}
+func (r *achievementRepo) IsAdvisorOf(ctx context.Context, lecturerID string, studentID string) (bool, error) {
+    query := `
+        SELECT COUNT(*) 
+        FROM students 
+        WHERE id = $1 AND advisor_id = $2
+    `
+    var count int
+    err := database.PostgresDB.QueryRowContext(ctx, query, studentID, lecturerID).Scan(&count)
+    if err != nil {
+        return false, err
+    }
+    return count > 0, nil
 }

@@ -72,7 +72,35 @@ func (s *AchievementService) Submit(ctx context.Context, id string) error {
 }
 
 func (s *AchievementService) Verify(ctx context.Context, id string) error {
-    return s.Repo.UpdateStatus(ctx, id, "verified")
+
+    // 1) Ambil data prestasi
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+
+    // 2) Harus submitted
+    if ref.Status != "submitted" {
+        return errors.New("achievement must be submitted before being verified")
+    }
+
+    // 3) Ambil userID dari context (dari middleware)
+    lecturerID, ok := ctx.Value("userID").(string)
+    if !ok {
+        return errors.New("failed retrieving lecturer id")
+    }
+
+    // 4) Cek apakah lecturer adalah advisor mahasiswa tsb
+    allowed, err := s.Repo.IsAdvisorOf(ctx, lecturerID, ref.StudentID)
+    if err != nil {
+        return err
+    }
+    if !allowed {
+        return errors.New("forbidden: you are not the advisor of this student")
+    }
+
+    // 5) Update menjadi verified
+    return s.Repo.VerifyAchievement(ctx, id, lecturerID)
 }
 
 func (s *AchievementService) Reject(ctx context.Context, id string, note string) error {

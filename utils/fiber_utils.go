@@ -117,12 +117,12 @@ func WrapListOwn(
     svcFunc func(context.Context, string) ([]models.Achievement, error),
 ) fiber.Handler {
     return func(c *fiber.Ctx) error {
-        userID, ok := c.Locals("userID").(string)
+        studentID, ok := c.Locals("studentID").(string)
         if !ok {
             return ErrorResponse(c, fiber.StatusUnauthorized, "User not authenticated")
         }
 
-        list, err := svcFunc(c.Context(), userID)
+        list, err := svcFunc(c.Context(), studentID)
         if err != nil {
             return ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
         }
