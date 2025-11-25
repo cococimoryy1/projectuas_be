@@ -4,7 +4,7 @@ import (
     "BE_PROJECTUAS/middleware"
     "BE_PROJECTUAS/apps/repository"
     "BE_PROJECTUAS/apps/services"
-    "BE_PROJECTUAS/utils"
+    "BE_PROJECTUAS/helper"
     "BE_PROJECTUAS/apps/models"
 
     "github.com/gofiber/fiber/v2"
@@ -22,15 +22,12 @@ func SetupRoutes(app *fiber.App) {
     // INIT REPOSITORY & SERVICE
     // =============================
 
-    // AUTH REPO
     authRepo := repository.NewAuthRepository()
     authSvc = services.NewAuthService(authRepo)
 
-    // USER REPO CRUD ADMIN
     userRepo := repository.NewUserRepository()
     userSvc = services.NewUserService(userRepo)
 
-    // ACHIEVEMENT REPO
     achRepo := repository.NewAchievementRepository()
     achSvc = services.NewAchievementService(achRepo)
 
@@ -38,14 +35,14 @@ func SetupRoutes(app *fiber.App) {
     // AUTH ROUTES (Public)
     // =============================
     api.Post("/auth/login",
-        utils.WrapLogic[models.LoginRequest, models.LoginResponse](authSvc.Login))
+        wrappers.WrapLogic(authSvc.Login))
 
     api.Post("/auth/refresh",
-        utils.WrapRefresh(authSvc.Refresh))
+        wrappers.WrapRefresh(authSvc.Refresh))
 
     auth := api.Group("/auth", middleware.AuthRequired())
-    auth.Post("/logout", utils.WrapLogout(authSvc.Logout))
-    auth.Get("/profile", utils.WrapProfile(authSvc.Profile))
+    auth.Post("/logout", wrappers.WrapLogout(authSvc.Logout))
+    auth.Get("/profile", wrappers.WrapProfile(authSvc.Profile))
 
     // =============================
     // USER ROUTES (Admin Only)
@@ -55,59 +52,70 @@ func SetupRoutes(app *fiber.App) {
         middleware.RequirePermission("user:manage"),
     )
 
-    users.Get("/", utils.WrapNoBody(userSvc.List))
-    users.Get("/:id", utils.WrapParamReturn(userSvc.Get))
-    users.Post("/", utils.WrapLogic[models.CreateUserRequest, string](userSvc.Create))
-    users.Put("/:id", utils.WrapUpdateResp[models.UpdateUserRequest, string](userSvc.Update))
-    users.Delete("/:id", utils.WrapParamResp[string](userSvc.Delete))
+    users.Get("/", wrappers.WrapNoBody(userSvc.List))
+    users.Get("/:id", wrappers.WrapParamReturn(userSvc.Get))
 
+    users.Post("/",
+        wrappers.WrapLogic[models.CreateUserRequest, string](userSvc.Create))
 
-    users.Put("/:id/role", utils.WrapLogicParam[models.UpdateRoleRequest, string](userSvc.UpdateRole))
+    users.Put("/:id",
+        wrappers.WrapUpdateResp[models.UpdateUserRequest, string](userSvc.Update))
 
+    users.Delete("/:id",
+        wrappers.WrapParamResp[string](userSvc.Delete))
+
+    users.Put("/:id/role",
+        wrappers.WrapLogicParam[models.UpdateRoleRequest, string](userSvc.UpdateRole))
 
     // =============================
     // ACHIEVEMENT ROUTES
     // =============================
     achievements := api.Group("/achievements", middleware.AuthRequired())
 
+    // CREATE ACHIEVEMENT (Mahasiswa)
     achievements.Post("/",
         middleware.RequirePermission("achievement:create"),
-        utils.WrapCreateAchievement(achSvc.Create),
-    )
+        wrappers.WrapCreateAchievement(achSvc.Create))
 
+    // SUBMIT
     achievements.Post("/:id/submit",
         middleware.RequirePermission("achievement:submit"),
-        utils.WrapParam(achSvc.Submit))
+        wrappers.WrapParam(achSvc.Submit))
 
+    // VERIFY (Dosen Wali)
     achievements.Post("/:id/verify",
         middleware.RequirePermission("achievement:verify"),
-        utils.WrapParam(achSvc.Verify))
+        wrappers.WrapParam(achSvc.Verify))
 
+    // REJECT (Dosen Wali)
     achievements.Post("/:id/reject",
         middleware.RequirePermission("achievement:reject"),
-        utils.WrapReject(achSvc.Reject))
+        wrappers.WrapReject(achSvc.Reject))
 
+    // MAHASISWA LIST OWN
     achievements.Get("/",
         middleware.RequirePermission("achievement:read_own"),
-        utils.WrapListOwn(achSvc.ListForStudent))
+        wrappers.WrapListStudent(achSvc.ListForStudent))
 
+    // DOSEN WALI LIST ADVISEES
     achievements.Get("/advisor",
         middleware.RequirePermission("achievement:read_advisee"),
-        utils.WrapListOwn(achSvc.ListForAdvisor))
+        wrappers.WrapListAdvisor(achSvc.ListForAdvisor))
 
+    // UPDATE ACHIEVEMENT (Mahasiswa)
     achievements.Put("/:id",
-        middleware.RequirePermission("achievement:update"),
-        utils.WrapUpdate[models.CreateAchievementRequest](achSvc.Update))
+        middleware.RequirePermission("achievement:update_own"),
+        wrappers.WrapLogicParam[models.UpdateAchievementRequest, models.AchievementResponse](achSvc.Update),
+    )
 
+
+    // DELETE ACHIEVEMENT (Mahasiswa soft delete)
     achievements.Delete("/:id",
         middleware.RequirePermission("achievement:delete"),
-        utils.WrapParam(achSvc.Delete))
+        wrappers.WrapParam(achSvc.Delete))
 
+    // HISTORY
     achievements.Get("/:id/history",
         middleware.RequirePermission("achievement:read"),
-        utils.WrapParam(achSvc.GetHistory))
-
-    // achievements.Post("/:id/attachments",
-    //     middleware.RequirePermission("achievement:upload"),
-    //     utils.WrapParam(achSvc.UploadAttachment))
+        wrappers.WrapParam(achSvc.GetHistory))
 }

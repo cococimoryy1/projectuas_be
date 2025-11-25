@@ -32,4 +32,10 @@ type AchievementRepository interface {
     GetByID(ctx context.Context, id string) (*models.Achievement, error)
     VerifyAchievement(ctx context.Context, id string, lecturerID string) error
     IsAdvisorOf(ctx context.Context, lecturerID string, studentID string) (bool, error)
+
+    SubmitAchievement(ctx context.Context, id string) error
+    UpdateMongoAchievement(ctx context.Context, mongoID string, req models.UpdateAchievementRequest) error
+    TouchUpdatedAt(ctx context.Context, id string) error
+
+    
 }

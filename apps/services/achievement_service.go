@@ -65,11 +65,57 @@ func (s *AchievementService) Create(ctx context.Context, req models.CreateAchiev
     }, nil
 }
 
+func (s *AchievementService) Update(ctx context.Context, id string, req models.UpdateAchievementRequest) (*models.AchievementResponse, error) {
+
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+
+    if ref.Status != "draft" {
+        return nil, errors.New("achievement can only be updated while in draft status")
+    }
+
+    // Update Mongo
+    err = s.Repo.UpdateMongoAchievement(ctx, ref.MongoAchievementID, req)
+    if err != nil {
+        return nil, err
+    }
+
+    // Update SQL
+    err = s.Repo.TouchUpdatedAt(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+
+    // Build response from SQL + Mongo
+    return &models.AchievementResponse{
+        ID:          ref.ID,
+        MongoID:     ref.MongoAchievementID,
+        StudentID:   ref.StudentID,
+        Title:       req.Title,
+        Description: req.Description,
+        Category:    ref.Status,
+        Status:      ref.Status,
+        CreatedAt:   ref.CreatedAt.Format(time.RFC3339),
+    }, nil
+}
+
 
 func (s *AchievementService) Submit(ctx context.Context, id string) error {
-    // Check status draft if needed
-    return s.Repo.UpdateStatus(ctx, id, "submitted")
+
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+
+    if ref.Status != "draft" {
+        return errors.New("only draft achievement can be submitted")
+    }
+
+    return s.Repo.SubmitAchievement(ctx, id)
 }
+
 
 func (s *AchievementService) Verify(ctx context.Context, id string) error {
 
@@ -117,10 +163,10 @@ func (s *AchievementService) ListForAdvisor(ctx context.Context, advisorID strin
 }
 
 // Update, Delete, History, Upload (placeholder)
-func (s *AchievementService) Update(ctx context.Context, id string, req models.CreateAchievementRequest) error {
-    // Placeholder FR-003 update draft (check status, update Mongo + Postgres)
-    return errors.New("not implemented") // Expand: Update Mongo by mongoID, then Postgres if needed
-}
+// func (s *AchievementService) Update(ctx context.Context, id string, req models.CreateAchievementRequest) error {
+//     // Placeholder FR-003 update draft (check status, update Mongo + Postgres)
+//     return errors.New("not implemented") // Expand: Update Mongo by mongoID, then Postgres if needed
+// }
 
 func (s *AchievementService) Delete(ctx context.Context, id string) error {
     return errors.New("not implemented") // FR-005 soft delete
@@ -129,6 +175,7 @@ func (s *AchievementService) Delete(ctx context.Context, id string) error {
 func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
     return errors.New("not implemented") // SRS hal.11
 }
+
 
 // func (s *AchievementService) UploadAttachment(ctx context.Context, id string) error {
 //     return errors.New("not implemented") // FR-003 attachments

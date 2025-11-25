@@ -1,4 +1,4 @@
-package utils
+package wrappers
 
 import (
     "BE_PROJECTUAS/apps/models" // Fix: Hapus /apps, konsisten dengan project

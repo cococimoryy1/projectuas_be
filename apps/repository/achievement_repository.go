@@ -4,9 +4,11 @@ import (
     "BE_PROJECTUAS/database"
     "BE_PROJECTUAS/apps/models"
     "context"
+    "time"
 
     // "github.com/google/uuid"
     "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/bson"
 )
 
 type achievementRepo struct{}
@@ -48,6 +50,26 @@ func (r *achievementRepo) InsertMongoAchievement(ctx context.Context, doc models
     return oid.Hex(), nil
 }
 
+func (r *achievementRepo) UpdateMongoAchievement(ctx context.Context, mongoID string, req models.UpdateAchievementRequest) error {
+    col := database.MongoDB.Collection("achievements")
+
+    oid, _ := primitive.ObjectIDFromHex(mongoID)
+
+    update := bson.M{
+        "$set": bson.M{
+            "title":        req.Title,
+            "description":  req.Description,
+            "details":      req.Details,
+            "tags":         req.Tags,
+            "updatedAt":    time.Now(),
+        },
+    }
+
+    _, err := col.UpdateByID(ctx, oid, update)
+    return err
+}
+
+
 func (r *achievementRepo) GetByID(ctx context.Context, id string) (*models.Achievement, error) {
     query := `
         SELECT id, student_id, mongo_achievement_id, status,
@@ -67,6 +89,7 @@ func (r *achievementRepo) GetByID(ctx context.Context, id string) (*models.Achie
     }
     return &a, nil
 }
+
 func (r *achievementRepo) VerifyAchievement(ctx context.Context, id, lecturerID string) error {
     query := `
         UPDATE achievement_references
@@ -78,7 +101,22 @@ func (r *achievementRepo) VerifyAchievement(ctx context.Context, id, lecturerID 
     _, err := database.PostgresDB.ExecContext(ctx, query, id, lecturerID)
     return err
 }
-
+func (r *achievementRepo) SubmitAchievement(ctx context.Context, id string) error {
+    query := `
+        UPDATE achievement_references
+        SET status='submitted',
+            submitted_at=NOW(),
+            updated_at=NOW()
+        WHERE id=$1;
+    `
+    _, err := database.PostgresDB.ExecContext(ctx, query, id)
+    return err
+}
+func (r *achievementRepo) TouchUpdatedAt(ctx context.Context, id string) error {
+    query := `UPDATE achievement_references SET updated_at = NOW() WHERE id = $1;`
+    _, err := database.PostgresDB.ExecContext(ctx, query, id)
+    return err
+}
 
 func (r *achievementRepo) UpdateStatus(ctx context.Context, id string, status string) error {
     query := `UPDATE achievement_references SET status = $1 WHERE id = $2;`

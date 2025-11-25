@@ -71,3 +71,9 @@ type CreateAchievementParsed struct {
     FilePath        string // file disimpan sebagai path
     FileType        string // mime type
 }
+type UpdateAchievementRequest struct {
+    Title       string                 `json:"title"`
+    Description string                 `json:"description"`
+    Details     map[string]interface{} `json:"details"`
+    Tags        []string               `json:"tags"`
+}
