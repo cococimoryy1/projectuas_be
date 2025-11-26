@@ -123,6 +123,37 @@ func (r *achievementRepo) UpdateStatus(ctx context.Context, id string, status st
     _, err := database.PostgresDB.ExecContext(ctx, query, status, id)
     return err
 }
+func (r *achievementRepo) SoftDelete(ctx context.Context, id string, userID string) error {
+    query := `
+        UPDATE achievement_references
+        SET 
+            status='deleted',
+            deleted_at=NOW(),
+            deleted_by=$2,
+            updated_at=NOW()
+        WHERE id=$1;
+    `
+    _, err := database.PostgresDB.ExecContext(ctx, query, id, userID)
+    return err
+}
+func (r *achievementRepo) SoftDeleteMongo(ctx context.Context, mongoID string) error {
+    col := database.MongoDB.Collection("achievements")
+
+    oid, _ := primitive.ObjectIDFromHex(mongoID)
+    now := time.Now()
+
+    update := bson.M{
+        "$set": bson.M{
+            "isDeleted": true,
+            "deletedAt": now,
+            "updatedAt": now,
+        },
+    }
+
+    _, err := col.UpdateByID(ctx, oid, update)
+    return err
+}
+
 
 func (r *achievementRepo) ListByStudent(ctx context.Context, studentID string) ([]models.Achievement, error) {
     query := `

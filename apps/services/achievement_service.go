@@ -148,6 +148,28 @@ func (s *AchievementService) Verify(ctx context.Context, id string) error {
     // 5) Update menjadi verified
     return s.Repo.VerifyAchievement(ctx, id, lecturerID)
 }
+func (s *AchievementService) Delete(ctx context.Context, id string, userID string) error {
+
+    // 1. Ambil prestasi
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+
+    // 2. Pastikan status draft
+    if ref.Status != "draft" {
+        return errors.New("only draft achievements can be deleted")
+    }
+
+    // 3. Soft delete MongoDB
+    err = s.Repo.SoftDeleteMongo(ctx, ref.MongoAchievementID)
+    if err != nil {
+        return err
+    }
+
+    // 4. Soft delete PostgreSQL
+    return s.Repo.SoftDelete(ctx, id, userID)
+}
 
 func (s *AchievementService) Reject(ctx context.Context, id string, note string) error {
     // Extend repo for note if needed (SRS hal.5)
@@ -168,9 +190,9 @@ func (s *AchievementService) ListForAdvisor(ctx context.Context, advisorID strin
 //     return errors.New("not implemented") // Expand: Update Mongo by mongoID, then Postgres if needed
 // }
 
-func (s *AchievementService) Delete(ctx context.Context, id string) error {
-    return errors.New("not implemented") // FR-005 soft delete
-}
+// func (s *AchievementService) Delete(ctx context.Context, id string) error {
+//     return errors.New("not implemented") // FR-005 soft delete
+// }
 
 func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
     return errors.New("not implemented") // SRS hal.11

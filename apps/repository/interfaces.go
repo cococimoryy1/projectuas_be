@@ -37,5 +37,7 @@ type AchievementRepository interface {
     UpdateMongoAchievement(ctx context.Context, mongoID string, req models.UpdateAchievementRequest) error
     TouchUpdatedAt(ctx context.Context, id string) error
 
-    
+    SoftDelete(ctx context.Context, id string, userID string) error
+    SoftDeleteMongo(ctx context.Context, mongoID string) error
+
 }

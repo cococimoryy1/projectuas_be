@@ -30,6 +30,8 @@ type AchievementMongo struct {
     Points      int                      `bson:"points"`
     CreatedAt   time.Time                `bson:"createdAt"`
     UpdatedAt   time.Time                `bson:"updatedAt"`
+    IsDeleted bool       `bson:"isDeleted"`
+    DeletedAt *time.Time `bson:"deletedAt"`
 }
 
 type AttachmentMongo struct {

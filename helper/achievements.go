@@ -113,3 +113,22 @@ func WrapUpdateDraft(
         return SuccessResponse(c, resp)
     }
 }
+func WrapDeleteDraft(
+    svc func(context.Context, string, string) error,
+) fiber.Handler {
+
+    return func(c *fiber.Ctx) error {
+
+        id := c.Params("id")
+
+        userID := c.Locals("userID").(string)
+
+        if err := svc(c.Context(), id, userID); err != nil {
+            return ErrorResponse(c, 400, err.Error())
+        }
+
+        return SuccessResponse(c, fiber.Map{
+            "message": "draft deleted successfully",
+        })
+    }
+}

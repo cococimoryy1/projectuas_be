@@ -111,8 +111,9 @@ func SetupRoutes(app *fiber.App) {
 
     // DELETE ACHIEVEMENT (Mahasiswa soft delete)
     achievements.Delete("/:id",
-        middleware.RequirePermission("achievement:delete"),
-        wrappers.WrapParam(achSvc.Delete))
+            middleware.RequirePermission("achievement:delete_own"),
+            wrappers.WrapDeleteDraft(achSvc.Delete),
+        )
 
     // HISTORY
     achievements.Get("/:id/history",
