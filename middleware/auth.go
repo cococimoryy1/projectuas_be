@@ -26,6 +26,7 @@ func AuthRequired() fiber.Handler {
 		c.Locals("claims", claims)
 		c.Locals("userID", claims.UserID)
         c.Locals("studentID", claims.StudentID)
+        c.Locals("lecturerID", claims.LecturerID)
 		c.Locals("role", claims.RoleName)
 
 

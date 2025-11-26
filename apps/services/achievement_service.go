@@ -118,36 +118,36 @@ func (s *AchievementService) Submit(ctx context.Context, id string) error {
 
 
 func (s *AchievementService) Verify(ctx context.Context, id string) error {
-
-    // 1) Ambil data prestasi
+    // Ambil data
     ref, err := s.Repo.GetByID(ctx, id)
     if err != nil {
         return err
     }
 
-    // 2) Harus submitted
+    // Validasi status
     if ref.Status != "submitted" {
-        return errors.New("achievement must be submitted before being verified")
+        return errors.New("only submitted achievements can be verified")
     }
 
-    // 3) Ambil userID dari context (dari middleware)
-    lecturerID, ok := ctx.Value("userID").(string)
-    if !ok {
-        return errors.New("failed retrieving lecturer id")
-    }
+    // VALIDASI DOSEN WALI
+    lecturerID := ctx.Value("lecturerID").(string)
 
-    // 4) Cek apakah lecturer adalah advisor mahasiswa tsb
     allowed, err := s.Repo.IsAdvisorOf(ctx, lecturerID, ref.StudentID)
     if err != nil {
         return err
     }
     if !allowed {
-        return errors.New("forbidden: you are not the advisor of this student")
+        return errors.New("forbidden: not advisor of this student")
     }
 
-    // 5) Update menjadi verified
-    return s.Repo.VerifyAchievement(ctx, id, lecturerID)
+    // SIMPAN USERID (FK KE USERS.ID)
+    userID := ctx.Value("userID").(string)
+
+    // UPDATE
+    return s.Repo.VerifyAchievement(ctx, id, userID)
 }
+
+
 func (s *AchievementService) Delete(ctx context.Context, id string, userID string) error {
 
     // 1. Ambil prestasi
@@ -172,31 +172,196 @@ func (s *AchievementService) Delete(ctx context.Context, id string, userID strin
 }
 
 func (s *AchievementService) Reject(ctx context.Context, id string, note string) error {
-    // Extend repo for note if needed (SRS hal.5)
-    return s.Repo.UpdateStatus(ctx, id, "rejected")
+
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+
+    if ref.Status != "submitted" {
+        return errors.New("only submitted achievements can be rejected")
+    }
+
+    // Pakai lecturerID untuk validasi advisor
+    lecturerID := ctx.Value("lecturerID").(string)
+
+    allowed, err := s.Repo.IsAdvisorOf(ctx, lecturerID, ref.StudentID)
+    if err != nil {
+        return err
+    }
+    if !allowed {
+        return errors.New("forbidden: not advisor of this student")
+    }
+
+    // Pakai userID untuk FK verified_by
+    userID := ctx.Value("userID").(string)
+
+    return s.Repo.RejectAchievement(ctx, id, userID, note)
 }
 
 func (s *AchievementService) ListForStudent(ctx context.Context, studentID string) ([]models.Achievement, error) {
     return s.Repo.ListByStudent(ctx, studentID)
 }
 
-func (s *AchievementService) ListForAdvisor(ctx context.Context, advisorID string) ([]models.Achievement, error) {
-    return s.Repo.ListByAdvisorStudents(ctx, advisorID)
+func (s *AchievementService) ListForAdvisor(ctx context.Context, advisorID string) ([]models.AchievementResponse, error) {
+
+    refs, err := s.Repo.ListByAdvisorStudents(ctx, advisorID)
+    if err != nil {
+        return nil, err
+    }
+
+    responses := []models.AchievementResponse{}
+
+    for _, r := range refs {
+
+        // Ambil data detail di Mongo
+        detail, err := s.Repo.GetMongoByID(ctx, r.MongoAchievementID)
+        if err != nil {
+            continue // skip error
+        }
+
+        responses = append(responses, models.AchievementResponse{
+            ID:          r.ID,
+            MongoID:     r.MongoAchievementID,
+            StudentID:   r.StudentID,
+            Title:       detail.Title,
+            Description: detail.Description,
+            Category:    detail.AchievementType,
+            Status:      r.Status,
+            CreatedAt:   r.CreatedAt.Format(time.RFC3339),
+        })
+    }
+
+    return responses, nil
 }
 
-// Update, Delete, History, Upload (placeholder)
-// func (s *AchievementService) Update(ctx context.Context, id string, req models.CreateAchievementRequest) error {
-//     // Placeholder FR-003 update draft (check status, update Mongo + Postgres)
-//     return errors.New("not implemented") // Expand: Update Mongo by mongoID, then Postgres if needed
-// }
 
-// func (s *AchievementService) Delete(ctx context.Context, id string) error {
-//     return errors.New("not implemented") // FR-005 soft delete
-// }
+func (s *AchievementService) GetHistory(ctx context.Context, id string) (*models.AchievementHistoryResponse, error) {
 
-func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
-    return errors.New("not implemented") // SRS hal.11
+    // Ambil data achievement dari PostgreSQL
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+
+    // ==========================
+    // VALIDASI AKSES SESUAI ROLE
+    // ==========================
+
+    role := ctx.Value("role").(string)
+    // userID := ctx.Value("userID").(string)
+    studentID := ctx.Value("studentID").(string)
+    lecturerID := ctx.Value("lecturerID").(string)
+
+    switch role {
+
+    // --------------------
+    // Mahasiswa → hanya bisa lihat history miliknya
+    // --------------------
+    case "Mahasiswa":
+        if ref.StudentID != studentID {
+            return nil, errors.New("forbidden")
+        }
+
+    // --------------------
+    // Dosen Wali → hanya mahasiswa bimbingannya
+    // --------------------
+    case "Dosen Wali":
+        allowed, err := s.Repo.IsAdvisorOf(ctx, lecturerID, ref.StudentID)
+        if err != nil {
+            return nil, err
+        }
+        if !allowed {
+            return nil, errors.New("forbidden")
+        }
+
+    // --------------------
+    // Admin → selalu boleh
+    // --------------------
+    case "Admin":
+        // no validation needed
+
+    // --------------------
+    // Role lain (jika ada)
+    // --------------------
+    default:
+        return nil, errors.New("forbidden")
+    }
+
+    // ==========================
+    // BANGUN HISTORY DARI DATABASE
+    // ==========================
+
+    history := []models.AchievementHistoryItem{}
+
+    // DRAFT
+    history = append(history, models.AchievementHistoryItem{
+        Status:    "draft",
+        ChangedAt: ref.CreatedAt,
+        ChangedBy: ref.StudentID,
+    })
+
+    // SUBMITTED
+    if ref.SubmittedAt != nil {
+        history = append(history, models.AchievementHistoryItem{
+            Status:    "submitted",
+            ChangedAt: *ref.SubmittedAt,
+            ChangedBy: ref.StudentID,
+        })
+    }
+
+    // VERIFIED
+    if ref.VerifiedAt != nil && ref.VerifiedBy != nil && ref.RejectionNote == nil {
+        history = append(history, models.AchievementHistoryItem{
+            Status:    "verified",
+            ChangedAt: *ref.VerifiedAt,
+            ChangedBy: *ref.VerifiedBy,
+        })
+    }
+
+    // REJECTED
+    if ref.VerifiedAt != nil && ref.VerifiedBy != nil && ref.RejectionNote != nil {
+        history = append(history, models.AchievementHistoryItem{
+            Status:    "rejected",
+            ChangedAt: *ref.VerifiedAt,
+            ChangedBy: *ref.VerifiedBy,
+            Note:      *ref.RejectionNote,
+        })
+    }
+
+    // DELETED
+    if ref.DeletedAt != nil && ref.DeletedBy != nil {
+        history = append(history, models.AchievementHistoryItem{
+            Status:    "deleted",
+            ChangedAt: *ref.DeletedAt,
+            ChangedBy: *ref.DeletedBy,
+        })
+    }
+
+    return &models.AchievementHistoryResponse{
+        AchievementID: ref.ID,
+        History:       history,
+    }, nil
 }
+
+func (s *AchievementService) UploadAttachment(ctx context.Context, id string, att models.AttachmentMongo) error {
+
+    ref, err := s.Repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+
+    if ref.Status == "verified" || ref.Status == "deleted" {
+        return errors.New("cannot upload attachment to verified or deleted achievement")
+    }
+
+    return s.Repo.AddAttachment(ctx, ref.MongoAchievementID, att)
+}
+
+
+// func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
+//     return errors.New("not implemented") // SRS hal.11
+// }
 
 
 // func (s *AchievementService) UploadAttachment(ctx context.Context, id string) error {

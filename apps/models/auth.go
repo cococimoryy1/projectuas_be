@@ -4,7 +4,8 @@ import "github.com/golang-jwt/jwt/v5"
 
 type JwtCustomClaims struct {
     UserID      string   `json:"user_id"`
-    StudentID   string   `json:"student_id"` // ← Wajib
+    StudentID   string   `json:"student_id"` 
+    LecturerID  string   `json:"lecturerId"`
     Username    string   `json:"username"`
     RoleName    string   `json:"role"`
     Permissions []string `json:"permissions"`

@@ -97,3 +97,13 @@ func (r *authRepo) GetPermissionsByRoleID(ctx context.Context, roleID string) ([
 
     return list, nil
 }
+func (r *authRepo) GetLecturerByUserID(ctx context.Context, userID string) (string, error) {
+    query := `SELECT id FROM lecturers WHERE user_id = $1 LIMIT 1`
+
+    var lecturerID string
+    err := database.PostgresDB.QueryRowContext(ctx, query, userID).Scan(&lecturerID)
+    if err != nil {
+        return "", err
+    }
+    return lecturerID, nil
+}

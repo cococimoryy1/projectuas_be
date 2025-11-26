@@ -72,23 +72,48 @@ func (r *achievementRepo) UpdateMongoAchievement(ctx context.Context, mongoID st
 
 func (r *achievementRepo) GetByID(ctx context.Context, id string) (*models.Achievement, error) {
     query := `
-        SELECT id, student_id, mongo_achievement_id, status,
-               submitted_at, verified_at, verified_by, rejection_note
+        SELECT 
+            id,
+            student_id,
+            mongo_achievement_id,
+            status,
+            submitted_at,
+            verified_at,
+            verified_by,
+            rejection_note,
+            created_at,
+            updated_at,
+            deleted_at,
+            deleted_by
         FROM achievement_references
         WHERE id = $1;
     `
+
     row := database.PostgresDB.QueryRowContext(ctx, query, id)
 
     var a models.Achievement
     err := row.Scan(
-        &a.ID, &a.StudentID, &a.MongoAchievementID, &a.Status,
-        &a.SubmittedAt, &a.VerifiedAt, &a.VerifiedBy, &a.RejectionNote,
+        &a.ID,
+        &a.StudentID,
+        &a.MongoAchievementID,
+        &a.Status,
+        &a.SubmittedAt,
+        &a.VerifiedAt,
+        &a.VerifiedBy,
+        &a.RejectionNote,
+        &a.CreatedAt,
+        &a.UpdatedAt,
+        &a.DeletedAt,
+        &a.DeletedBy,
     )
+
     if err != nil {
         return nil, err
     }
+
     return &a, nil
 }
+
 
 func (r *achievementRepo) VerifyAchievement(ctx context.Context, id, lecturerID string) error {
     query := `
@@ -183,6 +208,29 @@ func (r *achievementRepo) ListByStudent(ctx context.Context, studentID string) (
 
     return list, nil
 }
+func (r *achievementRepo) GetMongoByID(ctx context.Context, mongoID string) (*models.AchievementMongo, error) {
+    col := database.MongoDB.Collection("achievements")
+
+    oid, _ := primitive.ObjectIDFromHex(mongoID)
+
+    var result models.AchievementMongo
+    err := col.FindOne(ctx, bson.M{"_id": oid}).Decode(&result)
+    return &result, err
+}
+func (r *achievementRepo) RejectAchievement(ctx context.Context, id string, lecturerID string, note string) error {
+    query := `
+        UPDATE achievement_references
+        SET 
+            status='rejected',
+            rejection_note=$3,
+            verified_by=$2,
+            verified_at=NOW(),
+            updated_at=NOW()
+        WHERE id=$1;
+    `
+    _, err := database.PostgresDB.ExecContext(ctx, query, id, lecturerID, note)
+    return err
+}
 
 func (r *achievementRepo) ListByAdvisorStudents(ctx context.Context, advisorID string) ([]models.Achievement, error) {
     query := `
@@ -225,4 +273,21 @@ func (r *achievementRepo) IsAdvisorOf(ctx context.Context, lecturerID string, st
         return false, err
     }
     return count > 0, nil
+}
+func (r *achievementRepo) AddAttachment(ctx context.Context, mongoID string, att models.AttachmentMongo) error {
+    col := database.MongoDB.Collection("achievements")
+
+    oid, _ := primitive.ObjectIDFromHex(mongoID)
+
+    update := bson.M{
+        "$push": bson.M{
+            "attachments": att,
+        },
+        "$set": bson.M{
+            "updatedAt": time.Now(),
+        },
+    }
+
+    _, err := col.UpdateByID(ctx, oid, update)
+    return err
 }

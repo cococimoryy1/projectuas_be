@@ -39,22 +39,28 @@ func WrapParam(
 }
 
 func WrapReject(
-    svcFunc func(context.Context, string, string) error,
+    svc func(context.Context, string, string) error,
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
 
         req, err := ParseBody[models.RejectRequest](c)
         if err != nil {
-            return err
+            return ErrorResponse(c, 400, err.Error())
         }
 
-        if err := svcFunc(c.Context(), id, req.Note); err != nil {
-            return ErrorResponse(c, fiber.StatusUnprocessableEntity, err.Error())
+        if err := svc(c.Context(), id, req.Note); err != nil {
+            return ErrorResponse(c, 422, err.Error())
         }
-        return SuccessResponse(c, fiber.Map{"status": "rejected"})
+
+        return SuccessResponse(c, fiber.Map{
+            "status": "rejected",
+        })
     }
 }
+
 // WrapRefresh: For refresh (body with refreshToken)
 
 func WrapListAll(

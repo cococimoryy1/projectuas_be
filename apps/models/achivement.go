@@ -79,3 +79,33 @@ type UpdateAchievementRequest struct {
     Details     map[string]interface{} `json:"details"`
     Tags        []string               `json:"tags"`
 }
+type AchievementDetailResponse struct {
+    ID               string     `json:"id"`
+    MongoID          string     `json:"mongo_id"`
+    StudentID        string     `json:"student_id"`
+
+    Title            string     `json:"title"`
+    Description      string     `json:"description"`
+    Category         string     `json:"category"`
+
+    Status           string     `json:"status"`
+
+    SubmittedAt      *time.Time `json:"submitted_at"`
+    VerifiedAt       *time.Time `json:"verified_at"`
+    VerifiedBy       *string    `json:"verified_by"`
+    RejectionNote    *string    `json:"rejection_note"`
+
+    CreatedAt        string     `json:"created_at"`
+    UpdatedAt        string     `json:"updated_at"`
+    DeletedAt        *time.Time `json:"deleted_at"`
+}
+type AchievementHistoryItem struct {
+    Status     string    `json:"status"`
+    ChangedAt  time.Time `json:"changed_at"`
+    ChangedBy  string    `json:"changed_by"`
+    Note       string    `json:"note,omitempty"`
+}
+type AchievementHistoryResponse struct {
+    AchievementID string                     `json:"achievement_id"`
+    History       []AchievementHistoryItem   `json:"history"`
+}

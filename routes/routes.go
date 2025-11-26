@@ -114,9 +114,19 @@ func SetupRoutes(app *fiber.App) {
             middleware.RequirePermission("achievement:delete_own"),
             wrappers.WrapDeleteDraft(achSvc.Delete),
         )
+    achievements.Post("/:id/attachments",
+    middleware.RequirePermission("achievement:upload"),
+    wrappers.WrapUploadAttachment(achSvc.UploadAttachment),
+)
 
     // HISTORY
-    achievements.Get("/:id/history",
-        middleware.RequirePermission("achievement:read"),
-        wrappers.WrapParam(achSvc.GetHistory))
+achievements.Get("/:id/history",
+    middleware.RequireAnyPermission(
+        "achievement:read_own",
+        "achievement:view_advisee",
+        "achievement:read_all",
+    ),
+    wrappers.WrapParamReturn(achSvc.GetHistory),
+)
+
 }

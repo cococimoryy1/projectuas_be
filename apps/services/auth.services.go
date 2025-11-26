@@ -47,6 +47,8 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
     // ⬅️ Tambahkan StudentID
     studentID, _ := s.AuthRepo.GetStudentByUserID(ctx, user.ID)
 
+    // Ambil lecturer ID jika dosen
+    lecturerID, _ := s.AuthRepo.GetLecturerByUserID(ctx, user.ID)
     secret := os.Getenv("JWT_SECRET")
     if secret == "" {
         return nil, errors.New("jwt secret missing")
@@ -55,7 +57,8 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
     // JWT Payload
     claims := models.JwtCustomClaims{
         UserID:      user.ID,
-        StudentID:   studentID, // ⬅️ Tambahan
+        StudentID:   studentID, 
+        LecturerID:  lecturerID,
         Username:    user.Username,
         RoleName:    user.RoleName,
         Permissions: perms,

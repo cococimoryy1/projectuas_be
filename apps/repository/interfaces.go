@@ -10,6 +10,7 @@ type AuthRepository interface {
     FindByID(ctx context.Context, id string) (*models.User, error)
     GetPermissionsByRoleID(ctx context.Context, roleID string) ([]string, error)
     GetStudentByUserID(ctx context.Context, userID string) (string, error)
+    GetLecturerByUserID(ctx context.Context, userID string) (string, error)
 }
 
 type UserRepository interface {
@@ -31,6 +32,8 @@ type AchievementRepository interface {
     InsertMongoAchievement(ctx context.Context, doc models.AchievementMongo) (string, error)
     GetByID(ctx context.Context, id string) (*models.Achievement, error)
     VerifyAchievement(ctx context.Context, id string, lecturerID string) error
+    GetMongoByID(ctx context.Context, mongoID string) (*models.AchievementMongo, error)
+    RejectAchievement(ctx context.Context, id string, lecturerID string, note string) error
     IsAdvisorOf(ctx context.Context, lecturerID string, studentID string) (bool, error)
 
     SubmitAchievement(ctx context.Context, id string) error
@@ -39,5 +42,7 @@ type AchievementRepository interface {
 
     SoftDelete(ctx context.Context, id string, userID string) error
     SoftDeleteMongo(ctx context.Context, mongoID string) error
+    AddAttachment(ctx context.Context, mongoID string, att models.AttachmentMongo) error
+
 
 }

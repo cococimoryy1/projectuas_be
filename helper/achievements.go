@@ -5,6 +5,7 @@ import (
     "encoding/json"
     "path/filepath"
     "strings"
+    "time"
     "github.com/google/uuid"
     "github.com/gofiber/fiber/v2"
 
@@ -79,7 +80,7 @@ func WrapListStudent(
 
 // --- List Advisor's Advisees' Achievements ---
 func WrapListAdvisor(
-    svc func(context.Context, string) ([]models.Achievement, error),
+    svc func(context.Context, string) ([]models.AchievementResponse, error),
 ) fiber.Handler {
 
     return func(c *fiber.Ctx) error {
@@ -93,6 +94,7 @@ func WrapListAdvisor(
         return SuccessResponse(c, list)
     }
 }
+
 func WrapUpdateDraft(
     svc func(context.Context, string, models.UpdateAchievementRequest) (*models.AchievementResponse, error),
 ) fiber.Handler {
@@ -130,5 +132,36 @@ func WrapDeleteDraft(
         return SuccessResponse(c, fiber.Map{
             "message": "draft deleted successfully",
         })
+    }
+}
+func WrapUploadAttachment(
+    svc func(context.Context, string, models.AttachmentMongo) error,
+) fiber.Handler {
+
+    return func(c *fiber.Ctx) error {
+
+        id := c.Params("id")
+
+        file, err := c.FormFile("file")
+        if err != nil {
+            return ErrorResponse(c, 400, "file required")
+        }
+
+        filename := uuid.New().String() + filepath.Ext(file.Filename)
+        path := "./uploads/attachments/" + filename
+        c.SaveFile(file, path)
+
+        att := models.AttachmentMongo{
+            FileName:   filename,
+            FileUrl:    "/uploads/attachments/" + filename,
+            FileType:   file.Header.Get("Content-Type"),
+            UploadedAt: time.Now(),
+        }
+
+        if err := svc(c.Context(), id, att); err != nil {
+            return ErrorResponse(c, 400, err.Error())
+        }
+
+        return SuccessResponse(c, fiber.Map{"message": "attachment uploaded"})
     }
 }
