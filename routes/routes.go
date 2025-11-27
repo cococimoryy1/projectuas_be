@@ -31,6 +31,9 @@ func SetupRoutes(app *fiber.App) {
     achRepo := repository.NewAchievementRepository()
     achSvc = services.NewAchievementService(achRepo)
 
+    studentRepo := repository.NewStudentRepository()
+    studentSvc := services.NewStudentService(studentRepo)
+
     // =============================
     // AUTH ROUTES (Public)
     // =============================
@@ -115,18 +118,25 @@ func SetupRoutes(app *fiber.App) {
             wrappers.WrapDeleteDraft(achSvc.Delete),
         )
     achievements.Post("/:id/attachments",
-    middleware.RequirePermission("achievement:upload"),
-    wrappers.WrapUploadAttachment(achSvc.UploadAttachment),
-)
+        middleware.RequirePermission("achievement:update_own"),
+        wrappers.WrapUploadAttachment(achSvc.UploadAttachment),
+    )
 
     // HISTORY
-achievements.Get("/:id/history",
-    middleware.RequireAnyPermission(
-        "achievement:read_own",
-        "achievement:view_advisee",
-        "achievement:read_all",
-    ),
-    wrappers.WrapParamReturn(achSvc.GetHistory),
-)
+    achievements.Get("/:id/history",
+        middleware.RequireAnyPermission(
+            "achievement:read_own",
+            "achievement:view_advisee",
+            "achievement:read_all",
+        ),
+        wrappers.WrapParamReturn(achSvc.GetHistory),
+    )
+
+    students := api.Group("/students",
+    middleware.AuthRequired(),
+    middleware.RequirePermission("student:read"),
+    )
+
+    students.Get("/", wrappers.WrapNoBody(studentSvc.List))
 
 }

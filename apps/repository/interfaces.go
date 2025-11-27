@@ -46,3 +46,6 @@ type AchievementRepository interface {
 
 
 }
+type StudentRepository interface {
+    ListStudents(ctx context.Context) ([]models.StudentListResponse, error)
+}

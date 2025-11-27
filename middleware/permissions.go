@@ -15,6 +15,12 @@ func RequirePermission(requiredPermission string) fiber.Handler {
 
         claims := claimsRaw.(*models.JwtCustomClaims)
 
+        // ⬇️ OPSIONAL — ADMIN BYPASS SEMUA PERMISSION
+        if claims.RoleName == "Admin" {
+            return c.Next()
+        }
+
+        // CHECK PERMISSION
         for _, perm := range claims.Permissions {
             if perm == requiredPermission {
                 return c.Next()
@@ -24,6 +30,7 @@ func RequirePermission(requiredPermission string) fiber.Handler {
         return c.Status(403).JSON(fiber.Map{"error": "forbidden"})
     }
 }
+
 func RequireAnyPermission(perms ...string) fiber.Handler {
     return func(c *fiber.Ctx) error {
 
