@@ -28,10 +28,6 @@ func WrapLogic[Req any, Resp any](
 }
 
 
-/* ===============================
-        WRAP PARAM (/:id)
-================================*/
-
 func WrapParam(
     svcFunc func(context.Context, string) error,
 ) fiber.Handler {
@@ -49,11 +45,6 @@ func WrapParam(
         }))
     }
 }
-
-
-/* ===============================
-         WRAP REJECT
-================================*/
 
 func WrapReject(
     svcFunc func(context.Context, string, string) error,
@@ -80,7 +71,6 @@ func WrapReject(
 }
 
 // WrapRefresh: For refresh (body with refreshToken)
-
 func WrapListAll(
     svcFunc func(context.Context) ([]models.Achievement, error),
 ) fiber.Handler {
@@ -95,10 +85,6 @@ func WrapListAll(
         return c.JSON(Success(list))
     }
 }
-
-/* ======================================================
-                     UPDATE (PUT)
-======================================================*/
 
 func WrapUpdate[Req any](
     svc func(context.Context, string, Req) error,
@@ -124,10 +110,6 @@ func WrapUpdate[Req any](
     }
 }
 
-/* ======================================================
-              LOGIC + PARAM (PUT/POST)
-======================================================*/
-
 func WrapLogicParam[Req any, Resp any](
     svcFunc func(context.Context, string, Req) (*Resp, error),
 ) fiber.Handler {
@@ -151,10 +133,6 @@ func WrapLogicParam[Req any, Resp any](
     }
 }
 
-/* ======================================================
-                PARAM RETURN (GET /:id)
-======================================================*/
-
 func WrapParamResp[Resp any](
     svcFunc func(context.Context, string) (*Resp, error),
 ) fiber.Handler {
@@ -172,9 +150,6 @@ func WrapParamResp[Resp any](
     }
 }
 
-/* ======================================================
-             UPDATE + RETURN RESPONSE
-======================================================*/
 
 func WrapUpdateResp[Req any, Resp any](
     svcFunc func(context.Context, string, Req) (*Resp, error),
@@ -199,9 +174,6 @@ func WrapUpdateResp[Req any, Resp any](
     }
 }
 
-/* ======================================================
-               PARAM RETURN EXACT (GET /:id)
-======================================================*/
 
 func WrapParamReturn[Resp any](
     svcFunc func(context.Context, string) (*Resp, error),
@@ -224,10 +196,6 @@ func WrapParamReturn[Resp any](
 }
 
 
-/* ======================================================
-                    NO BODY GET
-======================================================*/
-
 func WrapNoBody[Resp any](
     svcFunc func(context.Context) (*Resp, error),
 ) fiber.Handler {
@@ -242,10 +210,6 @@ func WrapNoBody[Resp any](
         return c.JSON(Success(resp))
     }
 }
-
-/* ======================================================
-                  PROFILE HANDLER
-======================================================*/
 
 func WrapProfile(
     svcFunc func(context.Context, string) (*models.UserResponse, error),
@@ -267,9 +231,6 @@ func WrapProfile(
     }
 }
 
-/* ======================================================
-                    LOGOUT
-======================================================*/
 
 func WrapLogout(
     svcFunc func(context.Context) error,
@@ -286,10 +247,6 @@ func WrapLogout(
         }))
     }
 }
-
-/* ======================================================
-                    REFRESH TOKEN
-======================================================*/
 
 func WrapRefresh(
     svcFunc func(context.Context, string) (*models.LoginResponse, error),

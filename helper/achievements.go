@@ -14,9 +14,6 @@ import (
 )
 
 
-// ==========================================================
-// CREATE ACHIEVEMENT (multipart/form-data)
-// ==========================================================
 func WrapCreateAchievement(
     svc func(context.Context, models.CreateAchievementParsed, string) (*models.AchievementResponse, error),
 ) fiber.Handler {
@@ -67,10 +64,6 @@ func WrapCreateAchievement(
 }
 
 
-
-// ==========================================================
-// LIST STUDENT'S OWN ACHIEVEMENTS
-// ==========================================================
 func WrapListStudent(
     svc func(context.Context, string) ([]models.Achievement, error),
 ) fiber.Handler {
@@ -89,10 +82,6 @@ func WrapListStudent(
 }
 
 
-
-// ==========================================================
-// LIST ADVISOR'S ADVISEE ACHIEVEMENTS
-// ==========================================================
 func WrapListAdvisor(
     svc func(context.Context, string) ([]models.AchievementResponse, error),
 ) fiber.Handler {
@@ -111,10 +100,6 @@ func WrapListAdvisor(
 }
 
 
-
-// ==========================================================
-// UPDATE DRAFT ACHIEVEMENT (JSON)
-// ==========================================================
 func WrapUpdateDraft(
     svc func(context.Context, string, models.UpdateAchievementRequest) (*models.AchievementResponse, error),
 ) fiber.Handler {
@@ -139,10 +124,6 @@ func WrapUpdateDraft(
 }
 
 
-
-// ==========================================================
-// DELETE DRAFT ACHIEVEMENT
-// ==========================================================
 func WrapDeleteDraft(
     svc func(context.Context, string, string) error,
 ) fiber.Handler {
@@ -164,9 +145,6 @@ func WrapDeleteDraft(
 
 
 
-// ==========================================================
-// UPLOAD ATTACHMENT (multipart/form-data)
-// ==========================================================
 func WrapUploadAttachment(
     svc func(context.Context, string, models.AttachmentMongo) error,
 ) fiber.Handler {

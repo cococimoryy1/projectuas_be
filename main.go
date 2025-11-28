@@ -42,7 +42,7 @@ func main() {
         port = "3000"
     }
 
-    log.Println("🚀 Server running on port", port)
+    log.Println(" Server running on port", port)
     if err := app.Listen(":" + port); err != nil {
         log.Fatal(err)
     }

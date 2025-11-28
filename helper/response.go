@@ -21,7 +21,6 @@ func ParseBody[T any]() fiber.Handler {
     }
 }
 
-
 func Success(data any) map[string]any {
     return map[string]any{
         "status": "success",

@@ -15,7 +15,6 @@ func RequirePermission(requiredPermission string) fiber.Handler {
 
         claims := claimsRaw.(*models.JwtCustomClaims)
 
-        // ⬇️ OPSIONAL — ADMIN BYPASS SEMUA PERMISSION
         if claims.RoleName == "Admin" {
             return c.Next()
         }
