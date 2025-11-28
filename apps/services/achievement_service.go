@@ -244,10 +244,6 @@ func (s *AchievementService) GetHistory(ctx context.Context, id string) (*models
         return nil, err
     }
 
-    // ==========================
-    // VALIDASI AKSES SESUAI ROLE
-    // ==========================
-
     role := ctx.Value("role").(string)
     // userID := ctx.Value("userID").(string)
     studentID := ctx.Value("studentID").(string)
@@ -255,17 +251,14 @@ func (s *AchievementService) GetHistory(ctx context.Context, id string) (*models
 
     switch role {
 
-    // --------------------
     // Mahasiswa → hanya bisa lihat history miliknya
-    // --------------------
     case "Mahasiswa":
         if ref.StudentID != studentID {
             return nil, errors.New("forbidden")
         }
 
-    // --------------------
+
     // Dosen Wali → hanya mahasiswa bimbingannya
-    // --------------------
     case "Dosen Wali":
         allowed, err := s.Repo.IsAdvisorOf(ctx, lecturerID, ref.StudentID)
         if err != nil {
@@ -275,23 +268,14 @@ func (s *AchievementService) GetHistory(ctx context.Context, id string) (*models
             return nil, errors.New("forbidden")
         }
 
-    // --------------------
     // Admin → selalu boleh
-    // --------------------
     case "Admin":
         // no validation needed
-
-    // --------------------
     // Role lain (jika ada)
-    // --------------------
     default:
         return nil, errors.New("forbidden")
     }
-
-    // ==========================
     // BANGUN HISTORY DARI DATABASE
-    // ==========================
-
     history := []models.AchievementHistoryItem{}
 
     // DRAFT
@@ -358,12 +342,3 @@ func (s *AchievementService) UploadAttachment(ctx context.Context, id string, at
     return s.Repo.AddAttachment(ctx, ref.MongoAchievementID, att)
 }
 
-
-// func (s *AchievementService) GetHistory(ctx context.Context, id string) error {
-//     return errors.New("not implemented") // SRS hal.11
-// }
-
-
-// func (s *AchievementService) UploadAttachment(ctx context.Context, id string) error {
-//     return errors.New("not implemented") // FR-003 attachments
-// }

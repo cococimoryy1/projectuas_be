@@ -1,60 +1,40 @@
-package wrappers
+package helper
 
 // import (
-//     "context"
-//     "BE_PROJECTUAS/apps/models"
-//     "github.com/gofiber/fiber/v2"
+// 	"BE_PROJECTUAS/utils"
+// 	"BE_PROJECTUAS/apps/models"
+// 	"github.com/gofiber/fiber/v2"
+// 	"errors"
+// 	"strings"
 // )
 
-// func WrapLogin(
-//     svc func(context.Context, models.LoginRequest) (*models.LoginResponse, error),
-// ) fiber.Handler {
-//     return WrapLogic(svc)
+// func AuthCheck(c *fiber.Ctx) {
+//     authHeader := c.Get("Authorization")
+//     if authHeader == "" {
+//         return
+//     }
+
+//     parts := strings.Split(authHeader, " ")
+//     if len(parts) != 2 {
+//         return
+//     }
+
+//     claims, err := utils.ValidateToken(parts[1])
+//     if err != nil {
+//         return
+//     }
+
+//     c.Locals("claims", claims)
+//     c.Locals("userID", claims.UserID)
+//     c.Locals("studentID", claims.StudentID)
+//     c.Locals("lecturerID", claims.LecturerID)
+//     c.Locals("permissions", claims.Permissions)
 // }
 
-// func WrapProfile(
-//     svc func(context.Context, string) (*models.UserResponse, error),
-// ) fiber.Handler {
-
-//     return func(c *fiber.Ctx) error {
-//         userID := c.Locals("userID").(string)
-
-//         resp, err := svc(c.Context(), userID)
-//         if err != nil {
-//             return ErrorResponse(c, 404, err.Error())
-//         }
-//         return SuccessResponse(c, resp)
-//     }
-// }
-
-// func WrapRefresh(
-//     svc func(context.Context, string) (*models.LoginResponse, error),
-// ) fiber.Handler {
-
-//     return func(c *fiber.Ctx) error {
-//         type RefreshReq struct { RefreshToken string `json:"refreshToken"` }
-//         req, err := ParseBody[RefreshReq](c)
-//         if err != nil {
-//             return err
-//         }
-
-//         resp, svcErr := svc(c.Context(), req.RefreshToken)
-//         if svcErr != nil {
-//             return ErrorResponse(c, 401, svcErr.Error())
-//         }
-
-//         return SuccessResponse(c, resp)
-//     }
-// }
-
-// func WrapLogout(
-//     svc func(context.Context) error,
-// ) fiber.Handler {
-
-//     return func(c *fiber.Ctx) error {
-//         if err := svc(c.Context()); err != nil {
-//             return ErrorResponse(c, 500, err.Error())
-//         }
-//         return SuccessResponse(c, fiber.Map{"message": "Logged out"})
-//     }
+// func ExtractClaims(c *fiber.Ctx) (*models.JwtCustomClaims, error) {
+// 	raw := c.Locals("claims")
+// 	if raw == nil {
+// 		return nil, errors.New("unauthorized")
+// 	}
+// 	return raw.(*models.JwtCustomClaims), nil
 // }

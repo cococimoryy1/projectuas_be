@@ -1,4 +1,4 @@
-package wrappers
+package helper
 
 import (
     "context"
@@ -9,55 +9,73 @@ import (
 func WrapLogic[Req any, Resp any](
     svcFunc func(context.Context, Req) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
-        req, parseErr := ParseBody[Req](c)
-        if parseErr != nil {
-            return parseErr
+
+        body := c.Locals("parsed_body")
+        req, ok := body.(Req)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
         }
 
         resp, err := svcFunc(c.Context(), req)
         if err != nil {
-            return ErrorResponse(c, fiber.StatusBadRequest, err.Error())
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
 
-        return SuccessResponse(c, resp)
+        return c.JSON(Success(resp))
     }
 }
+
+
+/* ===============================
+        WRAP PARAM (/:id)
+================================*/
 
 func WrapParam(
     svcFunc func(context.Context, string) error,
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
+
         if err := svcFunc(c.Context(), id); err != nil {
-            return ErrorResponse(c, fiber.StatusConflict, err.Error())
+            return c.Status(409).JSON(Error(409, err.Error()))
         }
-        return SuccessResponse(c, fiber.Map{
+
+        return c.JSON(Success(map[string]any{
             "status": "updated",
-        })
+        }))
     }
 }
 
+
+/* ===============================
+         WRAP REJECT
+================================*/
+
 func WrapReject(
-    svc func(context.Context, string, string) error,
+    svcFunc func(context.Context, string, string) error,
 ) fiber.Handler {
 
     return func(c *fiber.Ctx) error {
 
         id := c.Params("id")
 
-        req, err := ParseBody[models.RejectRequest](c)
-        if err != nil {
-            return ErrorResponse(c, 400, err.Error())
+        body := c.Locals("parsed_body")
+        req, ok := body.(models.RejectRequest)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
         }
 
-        if err := svc(c.Context(), id, req.Note); err != nil {
-            return ErrorResponse(c, 422, err.Error())
+        if err := svcFunc(c.Context(), id, req.Note); err != nil {
+            return c.Status(422).JSON(Error(422, err.Error()))
         }
 
-        return SuccessResponse(c, fiber.Map{
+        return c.JSON(Success(map[string]any{
             "status": "rejected",
-        })
+        }))
     }
 }
 
@@ -66,151 +84,236 @@ func WrapReject(
 func WrapListAll(
     svcFunc func(context.Context) ([]models.Achievement, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
 
         list, err := svcFunc(c.Context())
         if err != nil {
-            return ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+            return c.Status(500).JSON(Error(500, err.Error()))
         }
 
-        return SuccessResponse(c, list)
+        return c.JSON(Success(list))
     }
 }
+
+/* ======================================================
+                     UPDATE (PUT)
+======================================================*/
 
 func WrapUpdate[Req any](
     svc func(context.Context, string, Req) error,
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
-        req, err := ParseBody[Req](c)
-        if err != nil {
-            return err
+
+        body := c.Locals("parsed_body")
+        req, ok := body.(Req)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
         }
+
         if err := svc(c.Context(), id, req); err != nil {
-            return ErrorResponse(c, 400, err.Error())
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
-        return SuccessResponse(c, fiber.Map{"status": "updated"})
+
+        return c.JSON(Success(map[string]any{
+            "status": "updated",
+        }))
     }
 }
+
+/* ======================================================
+              LOGIC + PARAM (PUT/POST)
+======================================================*/
+
 func WrapLogicParam[Req any, Resp any](
-    svc func(context.Context, string, Req) (*Resp, error),
+    svcFunc func(context.Context, string, Req) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
-        req, err := ParseBody[Req](c)
+
+        body := c.Locals("parsed_body")
+        req, ok := body.(Req)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
+        }
+
+        resp, err := svcFunc(c.Context(), id, req)
         if err != nil {
-            return err
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
-        resp, svcErr := svc(c.Context(), id, req)
-        if svcErr != nil {
-            return ErrorResponse(c, 400, svcErr.Error())
-        }
-        return SuccessResponse(c, resp)
+
+        return c.JSON(Success(resp))
     }
 }
+
+/* ======================================================
+                PARAM RETURN (GET /:id)
+======================================================*/
+
 func WrapParamResp[Resp any](
     svcFunc func(context.Context, string) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
 
         resp, err := svcFunc(c.Context(), id)
         if err != nil {
-            return ErrorResponse(c, 400, err.Error())
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
 
-        return SuccessResponse(c, resp)
+        return c.JSON(Success(resp))
     }
 }
+
+/* ======================================================
+             UPDATE + RETURN RESPONSE
+======================================================*/
+
 func WrapUpdateResp[Req any, Resp any](
     svcFunc func(context.Context, string, Req) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
 
-        req, err := ParseBody[Req](c)
+        body := c.Locals("parsed_body")
+        req, ok := body.(Req)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
+        }
+
+        resp, err := svcFunc(c.Context(), id, req)
         if err != nil {
-            return err
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
 
-        resp, svcErr := svcFunc(c.Context(), id, req)
-        if svcErr != nil {
-            return ErrorResponse(c, 400, svcErr.Error())
-        }
-
-        return SuccessResponse(c, resp)
+        return c.JSON(Success(resp))
     }
 }
+
+/* ======================================================
+               PARAM RETURN EXACT (GET /:id)
+======================================================*/
+
 func WrapParamReturn[Resp any](
     svcFunc func(context.Context, string) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         id := c.Params("id")
-        resp, err := svcFunc(c.Context(), id)
+
+        // inject fiber.Ctx ke context
+        ctx := context.WithValue(c.Context(), "fiberCtx", c)
+
+        resp, err := svcFunc(ctx, id)
         if err != nil {
-            return ErrorResponse(c, fiber.StatusNotFound, err.Error())
+            return c.Status(404).JSON(Error(404, err.Error()))
         }
-        return SuccessResponse(c, resp)
+
+        return c.JSON(Success(resp))
     }
 }
+
+
+/* ======================================================
+                    NO BODY GET
+======================================================*/
+
 func WrapNoBody[Resp any](
     svcFunc func(context.Context) (*Resp, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         resp, err := svcFunc(c.Context())
         if err != nil {
-            return ErrorResponse(c, fiber.StatusBadRequest, err.Error())
+            return c.Status(400).JSON(Error(400, err.Error()))
         }
-        return SuccessResponse(c, resp)
+
+        return c.JSON(Success(resp))
     }
 }
-// WrapProfile: For profile (no body, userID from locals)
+
+/* ======================================================
+                  PROFILE HANDLER
+======================================================*/
+
 func WrapProfile(
     svcFunc func(context.Context, string) (*models.UserResponse, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         userID, ok := c.Locals("userID").(string)
         if !ok {
-            return ErrorResponse(c, fiber.StatusUnauthorized, "User not authenticated")
+            return c.Status(401).JSON(Error(401, "user not authenticated"))
         }
 
         resp, err := svcFunc(c.Context(), userID)
         if err != nil {
-            return ErrorResponse(c, fiber.StatusNotFound, err.Error())
+            return c.Status(404).JSON(Error(404, err.Error()))
         }
 
-        return SuccessResponse(c, resp)
+        return c.JSON(Success(resp))
     }
 }
-// WrapLogout: Simple no body
+
+/* ======================================================
+                    LOGOUT
+======================================================*/
+
 func WrapLogout(
     svcFunc func(context.Context) error,
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
+
         if err := svcFunc(c.Context()); err != nil {
-            return ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+            return c.Status(500).JSON(Error(500, err.Error()))
         }
-        return SuccessResponse(c, fiber.Map{"message": "Logged out successfully"})
+
+        return c.JSON(Success(map[string]any{
+            "message": "Logged out successfully",
+        }))
     }
 }
-// WrapRefresh: For refresh (body with refreshToken)
+
+/* ======================================================
+                    REFRESH TOKEN
+======================================================*/
+
 func WrapRefresh(
     svcFunc func(context.Context, string) (*models.LoginResponse, error),
 ) fiber.Handler {
+
     return func(c *fiber.Ctx) error {
-        type RefreshReq struct {
-            RefreshToken string `json:"refreshToken"`
+
+        body := c.Locals("parsed_body")
+
+        req, ok := body.(models.RefreshRequest)
+        if !ok {
+            return c.Status(400).JSON(Error(400, "invalid parsed body"))
         }
-        req, parseErr := ParseBody[RefreshReq](c)
-        if parseErr != nil {
-            return parseErr
+
+        if req.RefreshToken == "" {
+            return c.Status(400).JSON(Error(400, "refreshToken missing"))
         }
 
         resp, err := svcFunc(c.Context(), req.RefreshToken)
         if err != nil {
-            return ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
+            return c.Status(401).JSON(Error(401, err.Error()))
         }
 
-        return SuccessResponse(c, resp)
+        return c.JSON(Success(resp))
     }
 }
+

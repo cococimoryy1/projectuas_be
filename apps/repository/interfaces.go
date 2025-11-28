@@ -48,4 +48,6 @@ type AchievementRepository interface {
 }
 type StudentRepository interface {
     ListStudents(ctx context.Context) ([]models.StudentListResponse, error)
+    GetByID(ctx context.Context, id string) (*models.StudentDetailResponse, error)
+    IsAdvisorOf(ctx context.Context, advisorID string, studentID string) (bool, error)
 }

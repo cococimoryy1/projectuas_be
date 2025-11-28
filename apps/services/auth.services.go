@@ -20,9 +20,8 @@ func NewAuthService(repo repository.AuthRepository) *AuthService {
     return &AuthService{AuthRepo: repo}
 }
 
-// ====================
+
 // LOGIN
-// ====================
 func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*models.LoginResponse, error) {
     if req.Username == "" || req.Password == "" {
         return nil, errors.New("username and password required")
@@ -44,7 +43,7 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
         return nil, errors.New("permission load error")
     }
 
-    // ⬅️ Tambahkan StudentID
+    // Tambahkan StudentID
     studentID, _ := s.AuthRepo.GetStudentByUserID(ctx, user.ID)
 
     // Ambil lecturer ID jika dosen
@@ -94,9 +93,7 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
     }, nil
 }
 
-// ====================
 // REFRESH
-// ====================
 func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*models.LoginResponse, error) {
     secret := os.Getenv("JWT_SECRET")
     if secret == "" {

@@ -4,20 +4,29 @@ import (
     "context"
     "BE_PROJECTUAS/apps/models"
     "BE_PROJECTUAS/apps/repository"
+    // "github.com/gofiber/fiber/v2"
 )
 
 type StudentService struct {
-    Repo repository.StudentRepository
+    Repo     repository.StudentRepository
+    AuthRepo repository.AuthRepository
 }
 
-func NewStudentService(repo repository.StudentRepository) *StudentService {
-    return &StudentService{Repo: repo}
+func NewStudentService(repo repository.StudentRepository, auth repository.AuthRepository) *StudentService {
+    return &StudentService{
+        Repo:     repo,
+        AuthRepo: auth,
+    }
 }
 
 func (s *StudentService) List(ctx context.Context) (*[]models.StudentListResponse, error) {
-    result, err := s.Repo.ListStudents(ctx)
+    list, err := s.Repo.ListStudents(ctx)
     if err != nil {
         return nil, err
     }
-    return &result, nil
+    return &list, nil
+}
+
+func (s *StudentService) GetByID(ctx context.Context, id string) (*models.StudentDetailResponse, error) {
+    return s.Repo.GetByID(ctx, id)
 }

@@ -1,4 +1,4 @@
-package wrappers
+package helper
 
 import (
     "BE_PROJECTUAS/apps/models" // Fix: Hapus /apps, konsisten dengan project
@@ -7,36 +7,40 @@ import (
     "github.com/gofiber/fiber/v2"
 )
 
-func ParseBody[T any](c *fiber.Ctx) (T, error) {
-    var req T
-    if err := c.BodyParser(&req); err != nil {
-        ErrorResponse(c, fiber.StatusBadRequest, "Invalid input data")
-        return req, err
+func ParseBody[T any]() fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        var req T
+        if err := c.BodyParser(&req); err != nil {
+            return c.Status(400).JSON(fiber.Map{
+                "error": "invalid input",
+            })
+        }
+
+        c.Locals("parsed_body", req)
+        return c.Next()
     }
-    return req, nil
 }
 
 
-func SuccessResponse(c *fiber.Ctx, data interface{}) error {
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+func Success(data any) map[string]any {
+    return map[string]any{
         "status": "success",
         "data":   data,
-    })
+    }
 }
 
-func ErrorResponse(c *fiber.Ctx, code int, message string) error {
-    return c.Status(code).JSON(fiber.Map{
+func Error(code int, message string) map[string]any {
+    return map[string]any{
         "status":  "error",
         "message": message,
         "code":    code,
-    })
+    }
 }
 
 // GetUserFromCtx: Extract user dari locals (set oleh AuthRequired middleware)
-func GetUserFromCtx(c *fiber.Ctx) (*models.User, bool) {
-    userValue := c.Locals("user") // Fix: Langsung c.Locals(), no locals.Get() atau import middleware/locals
-    user, ok := userValue.(*models.User)
-    return user, ok
+func CastUser(v any) (*models.User, bool) {
+    u, ok := v.(*models.User)
+    return u, ok
 }
 
 func GetCurrentTime() time.Time {
