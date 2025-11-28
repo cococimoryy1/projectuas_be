@@ -27,8 +27,7 @@ type AchievementRepository interface {
     CreateAchievementReference(ctx context.Context, a models.Achievement) (string, error)
     UpdateStatus(ctx context.Context, id string, status string) error
     ListByStudent(ctx context.Context, studentID string) ([]models.Achievement, error)
-    ListByAdvisorStudents(ctx context.Context, advisorID string) ([]models.Achievement, error) // Tambah FR-006
-    // Tambah jika perlu: ListAll for admin FR-010
+    ListByAdvisorStudents(ctx context.Context, advisorID string) ([]models.Achievement, error)
     InsertMongoAchievement(ctx context.Context, doc models.AchievementMongo) (string, error)
     GetByID(ctx context.Context, id string) (*models.Achievement, error)
     VerifyAchievement(ctx context.Context, id string, lecturerID string) error
@@ -39,13 +38,12 @@ type AchievementRepository interface {
     SubmitAchievement(ctx context.Context, id string) error
     UpdateMongoAchievement(ctx context.Context, mongoID string, req models.UpdateAchievementRequest) error
     TouchUpdatedAt(ctx context.Context, id string) error
-
     SoftDelete(ctx context.Context, id string, userID string) error
     SoftDeleteMongo(ctx context.Context, mongoID string) error
     AddAttachment(ctx context.Context, mongoID string, att models.AttachmentMongo) error
-
-
+    ListByStudentID(ctx context.Context, studentID string) ([]models.AchievementResponse, error)
 }
+
 type StudentRepository interface {
     ListStudents(ctx context.Context) ([]models.StudentListResponse, error)
     GetByID(ctx context.Context, id string) (*models.StudentDetailResponse, error)

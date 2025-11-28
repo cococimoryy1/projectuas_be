@@ -18,12 +18,11 @@ func SetupRoutes(app *fiber.App) {
     authSvc := services.NewAuthService(repository.NewAuthRepository())
     userSvc := services.NewUserService(repository.NewUserRepository())
     achSvc := services.NewAchievementService(repository.NewAchievementRepository())
-    studentSvc := services.NewStudentService(repository.NewStudentRepository(), repository.NewAuthRepository(),)
+    studentSvc := services.NewStudentService(repository.NewStudentRepository(),repository.NewAuthRepository(),repository.NewAchievementRepository(),)
 
     // AUTH
     api.Post("/auth/login", helper.ParseBody[models.LoginRequest](), helper.WrapLogic(authSvc.Login),)
-    api.Post("/auth/refresh", helper.ParseBody[models.RefreshRequest](), helper.WrapRefresh(authSvc.Refresh),
-)
+    api.Post("/auth/refresh", helper.ParseBody[models.RefreshRequest](), helper.WrapRefresh(authSvc.Refresh),)
 
     auth := api.Group("/auth", middleware.AuthRequired())
     auth.Post("/logout", helper.WrapLogout(authSvc.Logout))
@@ -50,9 +49,10 @@ func SetupRoutes(app *fiber.App) {
     achievements.Delete("/:id", middleware.RequirePermission("achievement:delete_own"), helper.WrapDeleteDraft(achSvc.Delete),)
     achievements.Post("/:id/attachments", middleware.RequirePermission("achievement:update_own"), helper.WrapUploadAttachment(achSvc.UploadAttachment),)
     achievements.Get("/:id/history", middleware.RequireAnyPermission(  "achievement:read_own","achievement:view_advisee","achievement:read_all",),helper.WrapParamReturn(achSvc.GetHistory),)
-
-    // STUDENTS
-    students := api.Group("/students", middleware.AuthRequired(),  middleware.RequireAnyPermission("student:read_detail", "lecturer:read_advisees", "student:read"), )
+    
+    // STUDENTS GROUP
+    students := api.Group("/students", middleware.AuthRequired(), middleware.RequireAnyPermission("student:read", "student:read_detail", "lecturer:read_advisees"),)
     students.Get("/", helper.WrapNoBody(studentSvc.List))
-    students.Get("/:id", helper.WrapParamReturn(studentSvc.GetByID), )
+    students.Get("/:id", helper.WrapParamReturn(studentSvc.GetByID))
+    students.Get("/:id/achievements", middleware.RequirePermission("student:read_achievements"), helper.WrapParamReturnList(studentSvc.GetStudentAchievements),)
 }
