@@ -56,3 +56,10 @@ type LecturerRepository interface {
     ListAdvisees(ctx context.Context, lecturerID string) ([]models.StudentListResponse, error)
     GetAdvisorByStudentID(ctx context.Context, studentID string) (string, error)
 }
+type ReportRepository interface {
+    StatsAll(ctx context.Context) (*models.ReportStatisticsResponse, error)
+    StatsByAdvisor(ctx context.Context, lecturerID string) (*models.ReportStatisticsResponse, error)
+    StatsByStudent(ctx context.Context, studentID string) (*models.ReportStatisticsResponse, error)
+
+    StudentSummary(ctx context.Context, studentID string) (*models.ReportStudentDetail, error)
+}
