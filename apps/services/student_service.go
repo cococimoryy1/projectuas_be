@@ -60,4 +60,24 @@ func (s *StudentService) GetStudentAchievements(ctx context.Context, id string) 
     // Admin boleh semua
     return s.AchRepo.ListByStudentID(ctx, student.ID)
 }
+func (s *StudentService) UpdateAdvisor(ctx context.Context, studentID string, req models.UpdateAdvisorRequest) error {
+
+    claims := ctx.Value("claims").(*models.JwtCustomClaims)
+
+    // Hanya Admin & Dosen Wali
+    if claims.RoleName != "Admin" && claims.RoleName != "Dosen Wali" {
+        return errors.New("forbidden")
+    }
+
+    // Dosen wali hanya boleh mengubah advisee-nya sendiri
+    if claims.RoleName == "Dosen Wali" {
+        allowed, _ := s.Repo.IsAdvisorOf(ctx, claims.LecturerID, studentID)
+        if !allowed {
+            return errors.New("forbidden")
+        }
+    }
+
+    // Update advisor
+    return s.Repo.UpdateAdvisor(ctx, studentID, req.AdvisorID)
+}
 

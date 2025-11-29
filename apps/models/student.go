@@ -31,3 +31,6 @@ type Student struct {
     AcademicYear  string `json:"academic_year"`
     AdvisorID     string `json:"advisor_id"`
 }
+type UpdateAdvisorRequest struct {
+    AdvisorID string `json:"advisor_id"`
+}

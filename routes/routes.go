@@ -55,4 +55,13 @@ func SetupRoutes(app *fiber.App) {
     students.Get("/", helper.WrapNoBody(studentSvc.List))
     students.Get("/:id", helper.WrapParamReturn(studentSvc.GetByID))
     students.Get("/:id/achievements", middleware.RequirePermission("student:read_achievements"), helper.WrapParamReturnList(studentSvc.GetStudentAchievements),)
+    students.Put("/:id/advisor", middleware.RequirePermission("student:update_advisor"), helper.ParseBody[models.UpdateAdvisorRequest](), helper.WrapParamBody(studentSvc.UpdateAdvisor),)
+
+    lecturerRepo := repository.NewLecturerRepository()
+    studentRepo := repository.NewStudentRepository()
+    lecturerSvc := services.NewLecturerService(lecturerRepo, studentRepo)
+    lecturers := api.Group("/lecturers", middleware.AuthRequired(), middleware.RequirePermission("lecturer:read"),)
+    lecturers.Get("/", helper.WrapNoBody(lecturerSvc.List))
+    lecturers.Get("/:id/advisees", middleware.RequirePermission("lecturer:read_advisees"), helper.WrapParamReturn(lecturerSvc.GetAdvisees),)
+
 }

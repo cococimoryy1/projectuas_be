@@ -48,4 +48,11 @@ type StudentRepository interface {
     ListStudents(ctx context.Context) ([]models.StudentListResponse, error)
     GetByID(ctx context.Context, id string) (*models.StudentDetailResponse, error)
     IsAdvisorOf(ctx context.Context, advisorID string, studentID string) (bool, error)
+    UpdateAdvisor(ctx context.Context, studentID string, advisorID string) error
+}
+type LecturerRepository interface {
+    ListLecturers(ctx context.Context) ([]models.LecturerListResponse, error)
+    GetByID(ctx context.Context, id string) (*models.LecturerDetailResponse, error)
+    ListAdvisees(ctx context.Context, lecturerID string) ([]models.StudentListResponse, error)
+    GetAdvisorByStudentID(ctx context.Context, studentID string) (string, error)
 }

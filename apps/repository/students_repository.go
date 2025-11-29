@@ -155,3 +155,12 @@ func (r *achievementRepo) ListByStudentID(ctx context.Context, studentID string)
 
     return list, nil
 }
+func (r *studentRepo) UpdateAdvisor(ctx context.Context, studentID string, advisorID string) error {
+    query := `
+        UPDATE students 
+        SET advisor_id = $2
+        WHERE id = $1;
+    `
+    _, err := database.PostgresDB.ExecContext(ctx, query, studentID, advisorID)
+    return err
+}
