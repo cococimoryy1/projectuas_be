@@ -110,7 +110,7 @@ Digunakan untuk menyimpan detail prestasi yang **bisa berbeda-beda** setiap maha
 ### 5. **Admin bisa melihat semua prestasi**
 Untuk keperluan rekap & monitoring.
 
-### . **Semua perubahan dicatat di hsitory**
+### 6. **Semua perubahan dicatat di history**
 ---
 ## 📊 Reporting & Analytics
 Sistem menyediakan statistik prestasi berdasarkan role.
