@@ -198,17 +198,16 @@ Format dokumen sesuai modul:
   "achievementType": "competition",
   "title": "...",
   "description": "...",
-  "details": { ... },
+  "details": {},
   "attachments": [],
   "tags": [],
   "points": 0,
-  "createdAt": ISODate(),
-  "updatedAt": ISODate()
+  "createdAt": "ISODate()",
+  "updatedAt": "ISODate()"
 }
+```
 
----
-
-📡 Endpoint Utama
+### 📡 Endpoint Utama
 
 Prefix:
 /api/v1
@@ -234,21 +233,21 @@ Verify / Reject
 POST    /achievements/:id/verify
 POST    /achievements/:id/reject
 
-⭐ NEW: Upload Attachments
+## ⭐ NEW: Upload Attachments
 POST    /achievements/:id/attachments
-
 Digunakan untuk upload atau mengganti file selama status masih Draft.
-⭐ NEW: Status History
-GET     /achievements/:id/history
 
+## ⭐ NEW: Status History
+GET     /achievements/:id/history
 Mengambil riwayat status prestasi.
-📈 Endpoints Statistik (Analytics)
+
+## 📈 Endpoints Statistik (Analytics)
 GET    /stats/achievements/type
 GET    /stats/achievements/period
 GET    /stats/achievements/top
 GET    /stats/achievements/competition-level
 
-▶️ Cara Menjalankan Project
+## ▶️ Cara Menjalankan Project
 1️⃣ Clone repository
 git clone https://github.com/cococimoryy1/projectuas_be.git
 cd projectuas_be
@@ -273,16 +272,4 @@ MongoDB connected
 Server running on port 8080
 📡 Endpoint Utama (Ringkas)
 
-Auth
-POST /login
-GET /profile
-Achievements
-POST /achievements
-PUT /achievements/:id
-DELETE /achievements/:id
-POST /achievements/:id/submit
-POST /achievements/:id/verify
-POST /achievements/:id/reject
-Students / Lecturers
-GET /lecturers/:id/advisees
-GET /students/:id/achievements
+
