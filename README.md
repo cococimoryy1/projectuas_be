@@ -207,7 +207,7 @@ Format dokumen sesuai modul:
 }
 ```
 
-### 📡 Endpoint Utama
+## 📡 Endpoint Utama
 
 Prefix:
 /api/v1
