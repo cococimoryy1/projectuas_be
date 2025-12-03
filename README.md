@@ -256,7 +256,7 @@ cd projectuas_be
 go mod tidy
 
 3️⃣ Setup .env
-APP_PORT=8080
+APP_PORT=3000
 POSTGRES_DSN=postgres://postgres:YOURPASSWORD@localhost:5432/prestasi_mahasiswa?sslmode=disable
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB=prestasi_mahasiswa
@@ -269,7 +269,7 @@ go run main.go
 Jika sukses:
 PostgreSQL connected
 MongoDB connected
-Server running on port 8080
+Server running on port 3000
 📡 Endpoint Utama (Ringkas)
 
 
