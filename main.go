@@ -9,25 +9,41 @@ import (
 
     "github.com/gofiber/fiber/v2"
     "github.com/joho/godotenv"
+    
+    // Swagger
+    _ "BE_PROJECTUAS/docs" 
+    _ "BE_PROJECTUAS/apps/swagger"
+    swagger "github.com/gofiber/swagger"
 )
 
+// @title Sistem Pelaporan Prestasi Mahasiswa API
+// @version 1.0
+// @description Backend REST API untuk pelaporan prestasi, verifikasi beberapa role, dan RBAC lengkap.
+// @host localhost:3000
+// @BasePath /api/v1
+
 func main() {
-    // Load .env
     if err := godotenv.Load(); err != nil {
         log.Println("⚠️  .env tidak ditemukan, pakai environment OS")
     }
 
-    // Connect databases
     database.ConnectPostgres()
     database.ConnectMongo()
 
-    // Setup fiber app
     app := fiber.New()
 
-    // ===== ROUTES ===== (Clean, init repo/service di dalam)
+    // =======================
+    // SWAGGER DOC ENDPOINT
+    // =======================
+    app.Get("/swagger/*", swagger.HandlerDefault) 
+    // http://localhost:3000/swagger/index.html
+
+    // =======================
+    // ROUTES
+    // =======================
     routes.SetupRoutes(app)
 
-    // ===== HEALTH CHECK =====
+    // HEALTH CHECK
     app.Get("/health", func(c *fiber.Ctx) error {
         return c.JSON(fiber.Map{
             "status":   "ok",
@@ -36,14 +52,11 @@ func main() {
         })
     })
 
-    // Read port from env
     port := os.Getenv("APP_PORT")
     if port == "" {
         port = "3000"
     }
 
     log.Println(" Server running on port", port)
-    if err := app.Listen(":" + port); err != nil {
-        log.Fatal(err)
-    }
+    app.Listen(":" + port)
 }

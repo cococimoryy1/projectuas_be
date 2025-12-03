@@ -33,9 +33,11 @@ func SetupRoutes(app *fiber.App) {
     // === AUTH ===
     api.Post("/auth/login", helper.ParseBody[models.LoginRequest](), helper.WrapLogic(authSvc.Login))
     api.Post("/auth/refresh", helper.ParseBody[models.RefreshRequest](), helper.WrapRefresh(authSvc.Refresh))
+
     auth := api.Group("/auth", middleware.AuthRequired())
     auth.Post("/logout", helper.WrapLogout(authSvc.Logout))
     auth.Get("/profile", helper.WrapProfile(authSvc.Profile))
+
     // === USERS ===
     users := api.Group("/users", middleware.AuthRequired(), middleware.RequirePermission("user:manage"))
     users.Get("/", helper.WrapNoBody(userSvc.List))
@@ -57,6 +59,7 @@ func SetupRoutes(app *fiber.App) {
     achievements.Delete("/:id", middleware.RequirePermission("achievement:delete_own"), helper.WrapDeleteDraft(achSvc.Delete))
     achievements.Post("/:id/attachments", middleware.RequirePermission("achievement:update_own"), helper.WrapUploadAttachment(achSvc.UploadAttachment))
     achievements.Get("/:id/history", middleware.RequireAnyPermission("achievement:read_own","achievement:view_advisee","achievement:read_all"), helper.WrapParamReturn(achSvc.GetHistory))
+
     // === STUDENTS ===
     students := api.Group("/students", middleware.AuthRequired(), middleware.RequireAnyPermission("student:read", "student:read_detail", "lecturer:read_advisees"),)
     students.Get("/", middleware.RequirePermission("student:read"),helper.WrapNoBody(studentSvc.List),)
@@ -64,10 +67,12 @@ func SetupRoutes(app *fiber.App) {
     students.Get("/:id", middleware.RequirePermission("student:read_detail"), helper.WrapParamReturn(studentSvc.GetByID),)
     students.Get("/:id/achievements", middleware.RequirePermission("student:read_achievements"), helper.WrapParamReturnList(studentSvc.GetStudentAchievements))
     students.Put("/:id/advisor", middleware.RequirePermission("student:update_advisor"), helper.ParseBody[models.UpdateAdvisorRequest](), helper.WrapParamBody(studentSvc.UpdateAdvisor))
+
     // === LECTURERS ===
     lecturers := api.Group("/lecturers", middleware.AuthRequired(), middleware.RequirePermission("lecturer:read"))
     lecturers.Get("/",middleware.RequirePermission("lecturer:read"), helper.WrapNoBody(lecturerSvc.List))
     lecturers.Get("/:id/advisees", middleware.RequirePermission("lecturer:read_advisees"), helper.WrapParamReturn(lecturerSvc.GetAdvisees))
+
     // === REPORTS ===
     reports := api.Group("/reports", middleware.AuthRequired())
     reports.Get("/statistics", middleware.RequirePermission("report:view_statistics"), helper.WrapNoBody(reportSvc.Statistics))

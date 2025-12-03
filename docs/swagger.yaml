@@ -1,4 +1,763 @@
+basePath: /api/v1
+definitions:
+  models.AchievementPeriodStat:
+    properties:
+      month:
+        type: string
+      total:
+        type: integer
+    type: object
+  models.AchievementResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      mongo_id:
+        type: string
+      status:
+        type: string
+      student_id:
+        type: string
+      title:
+        type: string
+    type: object
+  models.AchievementTypeStat:
+    properties:
+      total:
+        type: integer
+      type:
+        type: string
+    type: object
+  models.CompetitionLevelDist:
+    properties:
+      level:
+        type: string
+      total:
+        type: integer
+    type: object
+  models.CreateAchievementParsed:
+    properties:
+      achievementType:
+        type: string
+      description:
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      filePath:
+        description: file disimpan sebagai path
+        type: string
+      fileType:
+        description: mime type
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  models.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        type: string
+      role_id:
+        type: string
+      username:
+        type: string
+    type: object
+  models.LecturerListResponse:
+    properties:
+      advisee_count:
+        type: integer
+      department:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      lecturer_id:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      refreshToken:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.UserResponse'
+    type: object
+  models.RefreshRequest:
+    properties:
+      refreshToken:
+        type: string
+    type: object
+  models.RejectRequest:
+    properties:
+      rejection_note:
+        description: SRS hal.5
+        type: string
+    type: object
+  models.ReportStatisticsResponse:
+    properties:
+      level_distribution:
+        items:
+          $ref: '#/definitions/models.CompetitionLevelDist'
+        type: array
+      period_stats:
+        items:
+          $ref: '#/definitions/models.AchievementPeriodStat'
+        type: array
+      top_students:
+        items:
+          $ref: '#/definitions/models.TopStudentStat'
+        type: array
+      type_stats:
+        items:
+          $ref: '#/definitions/models.AchievementTypeStat'
+        type: array
+    type: object
+  models.ReportStudentDetail:
+    properties:
+      full_name:
+        type: string
+      student_id:
+        type: string
+      total_achievements:
+        type: integer
+    type: object
+  models.StudentDetailResponse:
+    properties:
+      academic_year:
+        type: string
+      advisor_id:
+        type: string
+      advisor_name:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      program_study:
+        type: string
+      student_id:
+        type: string
+    type: object
+  models.StudentListResponse:
+    properties:
+      academic_year:
+        type: string
+      advisor_id:
+        type: string
+      advisor_name:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      program_study:
+        type: string
+      student_id:
+        type: string
+      username:
+        type: string
+    type: object
+  models.TopStudentStat:
+    properties:
+      full_name:
+        type: string
+      student_id:
+        type: string
+      total_awards:
+        type: integer
+    type: object
+  models.UpdateAchievementRequest:
+    properties:
+      description:
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  models.UpdateAdvisorRequest:
+    properties:
+      advisor_id:
+        type: string
+    type: object
+  models.UpdateRoleRequest:
+    properties:
+      role_id:
+        type: string
+    type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      username:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        description: Tambah dari SRS hal.4
+        type: boolean
+      password_hash:
+        type: string
+      role_id:
+        type: string
+      role_name:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:3000
 info:
   contact: {}
-paths: {}
+  description: Backend REST API untuk pelaporan prestasi, verifikasi beberapa role,
+    dan RBAC lengkap.
+  title: Sistem Pelaporan Prestasi Mahasiswa API
+  version: "1.0"
+paths:
+  /achievements:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AchievementResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Student Achievements
+      tags:
+      - Achievements
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Achievement draft
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateAchievementParsed'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AchievementResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Achievement (Draft)
+      tags:
+      - Achievements
+  /achievements/{id}:
+    delete:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Delete Achievement Draft
+      tags:
+      - Achievements
+    put:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Draft
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateAchievementRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update Achievement Draft
+      tags:
+      - Achievements
+  /achievements/{id}/attachments:
+    post:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Upload Attachment
+      tags:
+      - Achievements
+  /achievements/{id}/history:
+    get:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Achievement History
+      tags:
+      - Achievements
+  /achievements/{id}/reject:
+    post:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection note
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RejectRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Reject Achievement
+      tags:
+      - Achievements
+  /achievements/{id}/submit:
+    post:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Submit Achievement
+      tags:
+      - Achievements
+  /achievements/{id}/verify:
+    post:
+      parameters:
+      - description: Achievement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Verify Achievement
+      tags:
+      - Achievements
+  /achievements/advisor:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AchievementResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Advisee Achievements
+      tags:
+      - Achievements
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Mengautentikasi user dan menghasilkan JWT access token + refresh
+        token
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login User
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout User
+      tags:
+      - Auth
+  /auth/profile:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Profile Pengguna
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refresh Token Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+      summary: Refresh Token
+      tags:
+      - Auth
+  /lecturers:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.LecturerListResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Lecturers
+      tags:
+      - Lecturers
+  /lecturers/{id}/advisees:
+    get:
+      parameters:
+      - description: Lecturer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.StudentListResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Lecturer Advisees
+      tags:
+      - Lecturers
+  /reports/statistics:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ReportStatisticsResponse'
+      security:
+      - BearerAuth: []
+      summary: Statistik Global
+      tags:
+      - Reports
+  /reports/student/{id}:
+    get:
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ReportStudentDetail'
+      security:
+      - BearerAuth: []
+      summary: Report Per Mahasiswa
+      tags:
+      - Reports
+  /students:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.StudentListResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List Students
+      tags:
+      - Students
+  /students/{id}:
+    get:
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StudentDetailResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail Mahasiswa
+      tags:
+      - Students
+  /students/{id}/achievements:
+    get:
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AchievementResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Student Achievements
+      tags:
+      - Students
+  /students/{id}/advisor:
+    put:
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateAdvisorRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update Advisor
+      tags:
+      - Students
+  /users:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List User
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New User Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create User
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete User
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      security:
+      - BearerAuth: []
+      summary: Detail User
+      tags:
+      - Users
+    put:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update User
+      tags:
+      - Users
+  /users/{id}/role:
+    put:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateRoleRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update User Role
+      tags:
+      - Users
 swagger: "2.0"
